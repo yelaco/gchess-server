@@ -37,15 +37,15 @@ func (b board) setBoard() {
 	}
 }
 
-func (b board) clearBoard() {
-	for i := range b.boxes {
-		for j := range b.boxes[i] {
-			b.boxes[i][j].piece = nil
-		}
-	}
-}
+// func (b board) clearBoard() {
+// 	for i := range b.boxes {
+// 		for j := range b.boxes[i] {
+// 			b.boxes[i][j].piece = nil
+// 		}
+// 	}
+// }
 
-func (b board) resetBoard() {
-	b.clearBoard()
-	b.setBoard()
-}
+// func (b board) resetBoard() {
+// 	b.clearBoard()
+// 	b.setBoard()
+// }

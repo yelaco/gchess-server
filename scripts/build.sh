@@ -12,7 +12,7 @@ build() {
 
 test() {
     echo "Running tests..."
-    go test -v $PKG
+    go test -v "../test/..."
 }
 
 clean() {

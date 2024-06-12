@@ -20,7 +20,7 @@ var (
 func init() {
 	viper.SetConfigName("config") // name of config flie (no extension)
 	viper.SetConfigType("json")
-	viper.AddConfigPath("../../.robinhood/config.json")
+	viper.AddConfigPath("../.robinhood/")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %s", err))

@@ -8,10 +8,13 @@ import (
 )
 
 type piece interface {
-	canMove(b board, start spot, end spot) bool
+	canMove(b *board, start *spot, end *spot) bool
 	isWhite() bool
-	attach(*piece)
-	// detach()
+}
+
+type combine interface {
+	attach(piece)
+	detach(piece)
 }
 
 /*
@@ -19,10 +22,10 @@ type piece interface {
  */
 type bishop struct {
 	white         bool
-	attachedPiece *piece
+	attachedPiece piece
 }
 
-func (b bishop) canMove(board board, start spot, end spot) bool {
+func (b bishop) canMove(board *board, start *spot, end *spot) bool {
 	if (start.x == end.x && start.y == end.y) || // same location
 		(end.piece != nil && start.piece.isWhite() == end.piece.isWhite()) || // same side
 		(math.Abs(float64(start.x-end.x)) != math.Abs(float64(start.y-end.y))) { // invalid move
@@ -72,12 +75,18 @@ func (b *bishop) isWhite() bool {
 	return b.white
 }
 
-func (b *bishop) attach(other *piece) {
+func (b *bishop) attach(other piece) {
 	if b.attachedPiece != nil {
 		logging.Error("The piece is still attaching to other *piece")
 	} else {
 		b.attachedPiece = other
 	}
+}
+
+func (b *bishop) detach() piece {
+	detachedPiece := b.attachedPiece
+	b.attachedPiece = nil
+	return detachedPiece
 }
 
 /*
@@ -88,7 +97,7 @@ type knight struct {
 	attachedPiece piece
 }
 
-func (k knight) canMove(board board, start spot, end spot) bool {
+func (k knight) canMove(board *board, start *spot, end *spot) bool {
 
 	return true
 }
@@ -97,8 +106,18 @@ func (k *knight) isWhite() bool {
 	return k.white
 }
 
-func (k *knight) attach(other *piece) {
-	// Implement the actual logic for attaching a piece
+func (k *knight) attach(other piece) {
+	if k.attachedPiece != nil {
+		logging.Error("The piece is still attaching to other *piece")
+	} else {
+		k.attachedPiece = other
+	}
+}
+
+func (k *knight) detach() piece {
+	detachedPiece := k.attachedPiece
+	k.attachedPiece = nil
+	return detachedPiece
 }
 
 /*
@@ -109,7 +128,7 @@ type rook struct {
 	attachedPiece piece
 }
 
-func (r rook) canMove(board board, start spot, end spot) bool {
+func (r rook) canMove(board *board, start *spot, end *spot) bool {
 	return true
 }
 
@@ -117,28 +136,18 @@ func (r *rook) isWhite() bool {
 	return r.white
 }
 
-func (r *rook) attach(other *piece) {
-
+func (r *rook) attach(other piece) {
+	if r.attachedPiece != nil {
+		logging.Error("The piece is still attaching to other *piece")
+	} else {
+		r.attachedPiece = other
+	}
 }
 
-/*
- * Queen
- */
-type queen struct {
-	white         bool
-	attachedPiece piece
-}
-
-func (q queen) canMove(b board, start spot, end spot) bool {
-	return true
-}
-
-func (q *queen) isWhite() bool {
-	return q.white
-}
-
-func (q *queen) attach(other *piece) {
-	// Implement the actual logic for attaching a piece
+func (r *rook) detach() piece {
+	detachedPiece := r.attachedPiece
+	r.attachedPiece = nil
+	return detachedPiece
 }
 
 /*
@@ -149,7 +158,7 @@ type pawn struct {
 	attachedPiece piece
 }
 
-func (p pawn) canMove(b board, start spot, end spot) bool {
+func (p pawn) canMove(board *board, start *spot, end *spot) bool {
 	return true
 }
 
@@ -157,26 +166,58 @@ func (p *pawn) isWhite() bool {
 	return p.white
 }
 
+func (p *pawn) promote(pieceName string) piece {
+	switch pieceName {
+	case "bishop":
+		return &bishop{white: p.white}
+	case "knight":
+		return &knight{white: p.white}
+	case "rook":
+		return &rook{white: p.white}
+	case "queen":
+		return &queen{white: p.white}
+	default:
+		logging.Fatal("Pawn promoted to UNDEFINED")
+		return nil
+	}
+}
+
 func (p *pawn) attach(other *piece) {
 	// Implement the actual logic for attaching a piece
+}
+
+func (p *pawn) detach() piece {
+	detachedPiece := p.attachedPiece
+	p.attachedPiece = nil
+	return detachedPiece
+}
+
+/*
+ * Queen
+ */
+type queen struct {
+	white bool
+}
+
+func (q queen) canMove(board *board, start *spot, end *spot) bool {
+	return true
+}
+
+func (q *queen) isWhite() bool {
+	return q.white
 }
 
 /*
  * King
  */
 type king struct {
-	white         bool
-	attachedPiece piece
+	white bool
 }
 
-func (k king) canMove(b board, start spot, end spot) bool {
+func (k king) canMove(board *board, start *spot, end *spot) bool {
 	return true
 }
 
 func (k *king) isWhite() bool {
 	return k.white
-}
-
-func (k *king) attach(other *piece) {
-	// Implement the actual logic for attaching a piece
 }
