@@ -11,7 +11,7 @@ import (
 func setGame(testPiece string) (*game.Game, string, string) {
 	igame := game.InitGame()
 	p1, p2 := igame.GetPlayerIds()
-	fmt.Printf("Player 1 ID: %s\nPlayer2 ID: %s\n\n", p1, p2)
+	fmt.Printf("Player 1 ID: %s\nPlayer 2 ID: %s\n\n", p1, p2)
 	var moves []string
 	switch testPiece {
 	case "pawn":

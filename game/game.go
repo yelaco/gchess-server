@@ -66,6 +66,11 @@ func (g *Game) updateBoard(move *move) {
 }
 
 func (g *Game) MakeMove(playerId, startPos, endPos string) error {
+	// check correct turn for move made by player with given id
+	if !g.correctTurn(playerId) {
+		return fmt.Errorf("wrong turn for player id: %s", playerId)
+	}
+
 	// map chess position to board coordinate
 	startX, startY := mapChessPosToCoord(startPos)
 	endX, endY := mapChessPosToCoord(endPos)
@@ -138,4 +143,12 @@ func (g *Game) PrintBoard() {
 
 	fmt.Println("  +-----------------+")
 	fmt.Println()
+}
+
+func (g *Game) correctTurn(playerId string) bool {
+	if g.isWhiteTurn {
+		return playerId == g.players[0].playerId
+	} else {
+		return playerId == g.players[1].playerId
+	}
 }
