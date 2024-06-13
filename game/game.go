@@ -47,6 +47,24 @@ func (g *Game) checkAndNextTurn() {
 	g.isWhiteTurn = !g.isWhiteTurn
 }
 
+func (g *Game) updateBoard(move *move) {
+	switch p := move.pieceMoved.(type) {
+	case *pawn:
+		p.initMoved = true
+	case *king:
+		p.initMoved = true
+	default:
+	}
+
+	if move.isCastling {
+	} else if move.isEnpassant {
+	} else if move.isPromoting {
+	} else {
+		move.end.piece = move.pieceMoved
+		move.start.piece = nil
+	}
+}
+
 func (g *Game) MakeMove(playerId, startPos, endPos string) error {
 	// map chess position to board coordinate
 	startX, startY := mapChessPosToCoord(startPos)
@@ -67,10 +85,12 @@ func (g *Game) MakeMove(playerId, startPos, endPos string) error {
 		return err
 	}
 
+	g.updateBoard(move)
 	g.checkAndNextTurn()
 
 	// add move to played moves history in the game
 	g.moves = append(g.moves, move)
+
 	return nil
 }
 
@@ -87,7 +107,7 @@ func (g *Game) checkMove(move *move) error {
 	}
 
 	// check valid move
-	if !srcPiece.canMove(g.board, &move.start, &move.end) {
+	if !srcPiece.canMove(g.board, move.start, move.end) {
 		return fmt.Errorf("invalid move: %s-%s", move.startPos, move.endPos)
 	}
 
@@ -98,4 +118,24 @@ func (g *Game) checkMove(move *move) error {
 	}
 
 	return nil
+}
+
+func (g *Game) PrintBoard() {
+	fmt.Println("  +-----------------+")
+
+	for i := 7; i >= 0; i-- {
+		fmt.Print("  | ")
+		for j := 0; j < 8; j++ {
+			box := g.board.boxes[j][i]
+			if box.piece != nil {
+				fmt.Print(box.piece.toUnicode() + " ")
+			} else {
+				fmt.Print(". ")
+			}
+		}
+		fmt.Println("|")
+	}
+
+	fmt.Println("  +-----------------+")
+	fmt.Println()
 }

@@ -4,19 +4,12 @@ import "fmt"
 
 type MoveStatus string
 
-const (
-	successMove   MoveStatus = "SUCCESS"
-	wrongTurnMove MoveStatus = "WRONG_TURN"
-	cannotMove    MoveStatus = "CANT_MOVE"
-	nullPieceMove MoveStatus = "NULL_PIECE"
-)
-
 type move struct {
 	playerId      string
 	startPos      string
 	endPos        string
-	start         spot
-	end           spot
+	start         *spot
+	end           *spot
 	pieceMoved    piece
 	pieceTaken    piece
 	piecePromoted piece

@@ -9,17 +9,20 @@ type spot struct {
 }
 
 type board struct {
-	boxes [8][8]spot
+	boxes [8][8]*spot
 }
 
 func initBoard() *board {
 	b := &board{}
 
-	// Set coordinates for each box in the board
+	// Set spots for each box in the board
 	for i := range b.boxes {
 		for j := range b.boxes[i] {
-			b.boxes[i][j].x = i
-			b.boxes[i][j].y = j
+			b.boxes[i][j] = &spot{
+				piece: nil,
+				x:     i,
+				y:     j,
+			}
 		}
 	}
 
