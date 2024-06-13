@@ -12,7 +12,18 @@ type board struct {
 	boxes [8][8]spot
 }
 
-func (b board) setBoard() {
+func initBoard() *board {
+	b := &board{}
+
+	// Set coordinates for each box in the board
+	for i := range b.boxes {
+		for j := range b.boxes[i] {
+			b.boxes[i][j].x = i
+			b.boxes[i][j].y = j
+		}
+	}
+
+	// Set pieces to their initial positions on the board
 	b.boxes[0][0].piece = &rook{white: true}
 	b.boxes[1][0].piece = &knight{white: true}
 	b.boxes[2][0].piece = &bishop{white: true}
@@ -35,17 +46,6 @@ func (b board) setBoard() {
 		b.boxes[i][1].piece = &pawn{white: true}
 		b.boxes[i][6].piece = &pawn{white: false}
 	}
+
+	return b
 }
-
-// func (b board) clearBoard() {
-// 	for i := range b.boxes {
-// 		for j := range b.boxes[i] {
-// 			b.boxes[i][j].piece = nil
-// 		}
-// 	}
-// }
-
-// func (b board) resetBoard() {
-// 	b.clearBoard()
-// 	b.setBoard()
-// }

@@ -14,6 +14,9 @@ func TestGame(t *testing.T) {
 
 	logging.Info(p1)
 	logging.Info(p2)
-	igame.MakeMove(p1, 0, 0, 1, 1)
-	igame.MakeMove(p2, 7, 7, 6, 6)
+	err := igame.MakeMove(p1, "c1", "d5")
+	if err != nil {
+		logging.Info(err.Error())
+	}
+	logging.Info(igame.GetLastMove())
 }

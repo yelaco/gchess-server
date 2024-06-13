@@ -1,5 +1,10 @@
 package game
 
+import (
+	"errors"
+	"fmt"
+)
+
 type GameStatus string
 
 const (
@@ -22,7 +27,7 @@ type Game struct {
 func InitGame() *Game {
 	return &Game{
 		players:     initPlayers(),
-		board:       &board{},
+		board:       initBoard(),
 		isWhiteTurn: true,
 		status:      active,
 	}
@@ -42,42 +47,48 @@ func (g *Game) checkAndNextTurn() {
 	g.isWhiteTurn = !g.isWhiteTurn
 }
 
-func (g *Game) MakeMove(playerId string, startX int, startY int, endX int, endY int) MoveStatus {
+func (g *Game) MakeMove(playerId, startPos, endPos string) error {
+	// map chess position to board coordinate
+	startX, startY := mapChessPosToCoord(startPos)
+	endX, endY := mapChessPosToCoord(endPos)
+
 	// setup move
 	startBox := g.board.boxes[startX][startY]
 	endBox := g.board.boxes[endX][endY]
 	move := &move{
 		playerId: playerId,
+		startPos: startPos,
+		endPos:   endPos,
 		start:    startBox,
 		end:      endBox,
 	}
 
-	if moveStatus := g.checkMove(move); moveStatus != successMove {
-		return moveStatus
+	if err := g.checkMove(move); err != nil {
+		return err
 	}
 
 	g.checkAndNextTurn()
 
 	// add move to played moves history in the game
 	g.moves = append(g.moves, move)
-	return successMove
+	return nil
 }
 
-func (g *Game) checkMove(move *move) MoveStatus {
+func (g *Game) checkMove(move *move) error {
 	srcPiece := move.start.piece
 	if srcPiece == nil {
-		return nullPieceMove
+		return fmt.Errorf("null piece at %d%d", move.start.x, move.start.y)
 	}
 	dstPiece := move.end.piece
 
 	// check correct turn
 	if srcPiece.isWhite() != g.isWhiteTurn {
-		return wrongTurnMove
+		return errors.New("wrong turn")
 	}
 
 	// check valid move
 	if !srcPiece.canMove(g.board, &move.start, &move.end) {
-		return cannotMove
+		return fmt.Errorf("invalid move: %s-%s", move.startPos, move.endPos)
 	}
 
 	move.pieceMoved = srcPiece
@@ -86,5 +97,5 @@ func (g *Game) checkMove(move *move) MoveStatus {
 		move.pieceTaken = dstPiece
 	}
 
-	return successMove
+	return nil
 }
