@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/minhquang053/robinhood-chess/game"
+	"github.com/yelaco/robinhood-chess/game"
 )
 
 func setGame(testPiece string) (*game.Game, string, string) {
@@ -20,6 +20,10 @@ func setGame(testPiece string) (*game.Game, string, string) {
 		moves = []string{"d2-d4", "e7-e5"}
 	case "knight":
 		moves = []string{"d2-d4", "e7-e5"}
+	case "rook":
+		moves = []string{"a2-a4", "b7-b5", "a4-b5", "b8-c6"}
+	case "queen":
+		moves = []string{"e2-e4", "e7-e5"}
 	default:
 	}
 	for i, move := range moves {
@@ -75,4 +79,26 @@ func TestKnight(t *testing.T) {
 		fmt.Printf("Last move: %s\n", igame.GetLastMove())
 	}
 	igame.PrintBoard()
+}
+
+func TestRook(t *testing.T) {
+	igame, p1, _ := setGame("rook")
+	err := igame.MakeMove(p1, "a1", "a7")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	igame.PrintBoard()
+}
+
+func TestQueen(t *testing.T) {
+	igame, p1, _ := setGame("queen")
+	err := igame.MakeMove(p1, "d1", "g4")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	igame.PrintBoard()
+}
+
+func TestKing(t *testing.T) {
+
 }

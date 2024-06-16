@@ -3,7 +3,7 @@ package game
 import (
 	"math"
 
-	"github.com/minhquang053/robinhood-chess/internal/logging"
+	"github.com/yelaco/robinhood-chess/internal/logging"
 )
 
 /*

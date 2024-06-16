@@ -1,4 +1,4 @@
-module github.com/minhquang053/robinhood-chess
+module github.com/yelaco/robinhood-chess
 
 go 1.22.3
 

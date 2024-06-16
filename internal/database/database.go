@@ -3,8 +3,8 @@ package database
 import (
 	"fmt"
 
-	"github.com/minhquang053/robinhood-chess/internal/config"
-	"github.com/minhquang053/robinhood-chess/internal/logging"
+	"github.com/yelaco/robinhood-chess/internal/config"
+	"github.com/yelaco/robinhood-chess/internal/logging"
 
 	"github.com/jackc/pgx"
 )

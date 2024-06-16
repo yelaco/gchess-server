@@ -1,6 +1,6 @@
 package game
 
-import "github.com/minhquang053/robinhood-chess/pkg/utils"
+import "github.com/yelaco/robinhood-chess/pkg/utils"
 
 type player struct {
 	playerId    string
