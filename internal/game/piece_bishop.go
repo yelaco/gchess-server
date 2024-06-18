@@ -8,26 +8,23 @@ import (
 )
 
 /*
- * Queen
+ * Bishop
  */
-type queen struct {
-	white bool
+type bishop struct {
+	white         bool
+	attachedPiece piece
 }
 
-func (q queen) canMove(board *board, start *spot, end *spot) bool {
+func (b bishop) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
-		logging.Info("Same location")
 		return false
 	} // same location (pointer comparison)
 
 	if end.piece != nil && start.piece.isWhite() == end.piece.isWhite() {
-		logging.Info("Same side")
 		return false
 	} // same side
 
-	if math.Abs(float64(start.x-end.x))*math.Abs(float64(start.y-end.y)) != 0.0 &&
-		math.Abs(float64(start.x-end.x)) != math.Abs(float64(start.y-end.y)) {
-		logging.Info("Invalid move")
+	if math.Abs(float64(start.x-end.x)) != math.Abs(float64(start.y-end.y)) {
 		return false
 	} // invalid move
 
@@ -37,24 +34,24 @@ func (q queen) canMove(board *board, start *spot, end *spot) bool {
 	bey := end.y // bound of end y to check starting from j
 	if i < bex {
 		bex--
-	} else if i > bex {
+	} else {
 		bex++
 	}
 	if j < bey {
 		bey--
-	} else if j > bey {
+	} else {
 		bey++
 	}
 
-	for i != bex || j != bey {
+	for i != bex && j != bey {
 		if i < bex {
 			i++
-		} else if i > bex {
+		} else {
 			i--
 		}
 		if j < bey {
 			j++
-		} else if j > bey {
+		} else {
 			j--
 		}
 
@@ -63,21 +60,36 @@ func (q queen) canMove(board *board, start *spot, end *spot) bool {
 				return false
 			}
 		} else {
-			logging.Error("Queen canMove(): Index out of range")
+			logging.Error("Bishop canMove(): Index out of range")
 			return false
 		}
 	}
+
 	return true
 }
 
-func (q *queen) isWhite() bool {
-	return q.white
+func (b bishop) isWhite() bool {
+	return b.white
 }
 
-func (q *queen) toUnicode() string {
-	if q.white {
-		return "♛"
+func (b bishop) toUnicode() string {
+	if b.white {
+		return "♝"
 	} else {
-		return "♕"
+		return "♗"
 	}
+}
+
+func (b *bishop) attach(other piece) {
+	if b.attachedPiece != nil {
+		logging.Error("The piece is still attaching to other *piece")
+	} else {
+		b.attachedPiece = other
+	}
+}
+
+func (b *bishop) detach() piece {
+	detachedPiece := b.attachedPiece
+	b.attachedPiece = nil
+	return detachedPiece
 }

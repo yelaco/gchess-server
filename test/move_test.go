@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yelaco/robinhood-chess/game"
+	"github.com/yelaco/robinhood-chess/internal/game"
 )
 
 func setGame(testPiece string) (*game.Game, string, string) {
@@ -15,7 +15,7 @@ func setGame(testPiece string) (*game.Game, string, string) {
 	var moves []string
 	switch testPiece {
 	case "pawn":
-		moves = []string{"d2-d4", "e7-e5"}
+		moves = []string{"d2-d4", "b8-c6", "d4-d5", "e7-e5", "d5-e6", "a7-a6", "e6-d7", "d8-d7"}
 	case "bishop":
 		moves = []string{"d2-d4", "e7-e5"}
 	case "knight":
@@ -24,6 +24,8 @@ func setGame(testPiece string) (*game.Game, string, string) {
 		moves = []string{"a2-a4", "b7-b5", "a4-b5", "b8-c6"}
 	case "queen":
 		moves = []string{"e2-e4", "e7-e5"}
+	case "king":
+		moves = []string{"e2-e4", "e7-e5", "f1-c4", "f7-f6", "g1-f3", "f8-c5", "e1-h1", "g8-h6", "f1-e1", "d7-d5", "a2-a3", "e8-h8"}
 	default:
 	}
 	for i, move := range moves {
@@ -31,14 +33,15 @@ func setGame(testPiece string) (*game.Game, string, string) {
 		if i%2 == 0 {
 			err := igame.MakeMove(p1, pos[0], pos[1])
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Printf("%s: %s\n", move, err.Error())
 			}
 		} else {
 			err := igame.MakeMove(p2, pos[0], pos[1])
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Printf("%s: %s\n", move, err.Error())
 			}
 		}
+
 		// igame.PrintBoard()
 	}
 	return igame, p1, p2
@@ -48,11 +51,8 @@ func TestPawn(t *testing.T) {
 	igame, p1, _ := setGame("pawn")
 
 	// err := igame.MakeMove(p1, "d4", "d6")
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// }
-
-	err := igame.MakeMove(p1, "d4", "e5")
+	// err := igame.MakeMove(p1, "d4", "e5")
+	err := igame.MakeMove(p1, "d7", "c8")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -75,8 +75,6 @@ func TestKnight(t *testing.T) {
 	err := igame.MakeMove(p1, "b1", "d2")
 	if err != nil {
 		fmt.Println(err.Error())
-	} else {
-		fmt.Printf("Last move: %s\n", igame.GetLastMove())
 	}
 	igame.PrintBoard()
 }
@@ -100,5 +98,10 @@ func TestQueen(t *testing.T) {
 }
 
 func TestKing(t *testing.T) {
-
+	igame, p1, _ := setGame("king")
+	err := igame.MakeMove(p1, "e1", "h1")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	igame.PrintBoard()
 }

@@ -16,14 +16,12 @@ type pawn struct {
 	initMoved     bool // 2 step init move
 }
 
-func (p *pawn) canMove(board *board, start *spot, end *spot) bool {
+func (p pawn) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
-		logging.Info("Same location")
 		return false
 	} // same location (pointer comparison)
 
 	if end.piece != nil && start.piece.isWhite() == end.piece.isWhite() {
-		logging.Info("Same side")
 		return false
 	} // same side
 
@@ -35,7 +33,6 @@ func (p *pawn) canMove(board *board, start *spot, end *spot) bool {
 	if math.Abs(float64(end.x-start.x)) > 1.0 ||
 		math.Abs(float64(end.y-start.y)) > 2.0 ||
 		math.Abs(float64(end.y-start.y)) == 0.0 {
-		logging.Info("Invalid move")
 		return false
 	} // invalid move
 
@@ -60,19 +57,23 @@ func (p *pawn) canMove(board *board, start *spot, end *spot) bool {
 		if math.Abs(float64(end.y-start.y)) == 2.0 {
 			return false
 		}
-		return end.piece != nil || canEnpassant(board, start, end)
+		return end.piece != nil
 	}
 }
 
-func canEnpassant(board *board, start *spot, end *spot) bool {
-	return false
+func (p pawn) canEnpassant(start *spot, end *spot, lastMove *move) bool {
+	if lastMove == nil {
+		return false
+	}
+	_, ok := lastMove.pieceMoved.(pawn)
+	return ok && lastMove.isInitMove && lastMove.end.y == start.y && lastMove.end.x == end.x
 }
 
-func (p *pawn) isWhite() bool {
+func (p pawn) isWhite() bool {
 	return p.white
 }
 
-func (p *pawn) toUnicode() string {
+func (p pawn) toUnicode() string {
 	if p.white {
 		return "♟"
 	} else {
@@ -80,7 +81,7 @@ func (p *pawn) toUnicode() string {
 	}
 }
 
-func (p *pawn) promote(pieceName string) piece {
+func (p pawn) promote(pieceName string) piece {
 	switch pieceName {
 	case "bishop":
 		return &bishop{white: p.white}

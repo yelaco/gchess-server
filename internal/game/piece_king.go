@@ -16,14 +16,14 @@ type king struct {
 	initMoved bool
 }
 
-func (k *king) canMove(board *board, start *spot, end *spot) bool {
+func (k king) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
 		return false
 	}
 
 	if end.piece != nil &&
 		start.piece.isWhite() == end.piece.isWhite() &&
-		!isCastlingMove(start.x, start.y, end.x) {
+		!isCastlingMove(start.x, start.y, end.x, end.y) {
 		return false
 	}
 
@@ -38,6 +38,13 @@ func (k *king) canMove(board *board, start *spot, end *spot) bool {
 		tempTakenPiece := end.piece
 		end.piece = start.piece
 		start.piece = nil
+
+		// Restore the board state
+		defer func() {
+			start.piece = end.piece
+			end.piece = tempTakenPiece
+		}()
+
 		for i := 0; i < 8; i++ {
 			for j := 0; j < 8; j++ {
 				box := board.boxes[i][j]
@@ -59,20 +66,18 @@ func (k *king) canMove(board *board, start *spot, end *spot) bool {
 			}
 		}
 
-		// Restore the board state
-		start.piece = end.piece
-		end.piece = tempTakenPiece
+		return true
 	}
 
 	// if not normal valid move, the only option left is castling
 	return k.canCastling(board, start, end)
 }
 
-func (k *king) isWhite() bool {
+func (k king) isWhite() bool {
 	return k.white
 }
 
-func (k *king) toUnicode() string {
+func (k king) toUnicode() string {
 	if k.white {
 		return "♚"
 	} else {
@@ -80,16 +85,8 @@ func (k *king) toUnicode() string {
 	}
 }
 
-func isCastlingMove(sx, sy, ex int) bool {
-	if sx != 0 && sy != 7 {
-		return false
-	}
-
-	if sx != 4 || (ex != 0 && ex != 7) {
-		return false
-	}
-
-	return true
+func isCastlingMove(sx, sy, ex, ey int) bool {
+	return sx == 4 && ey == sy && (ex == 0 || ex == 7) && (sy == 0 || sy == 7)
 }
 
 func (k *king) canCastling(board *board, start *spot, end *spot) bool {
@@ -97,7 +94,7 @@ func (k *king) canCastling(board *board, start *spot, end *spot) bool {
 		return false
 	}
 
-	if _, ok := end.piece.(*rook); !ok {
+	if r, ok := end.piece.(rook); !ok || r.initMoved {
 		return false
 	}
 
@@ -109,11 +106,12 @@ func (k *king) canCastling(board *board, start *spot, end *spot) bool {
 		return false
 	}
 
-	if !isCastlingMove(start.x, start.y, end.x) {
+	if !isCastlingMove(start.x, start.y, end.x, end.y) {
 		return false
 	}
 
-	inBetweens := []*spot{start}
+	inBetweens := make([]*spot, 0, 6)
+	inBetweens = append(inBetweens, start)
 
 	i := start.x
 	j := start.y

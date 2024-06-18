@@ -1,7 +1,5 @@
 package game
 
-import "fmt"
-
 type MoveStatus string
 
 type move struct {
@@ -17,6 +15,7 @@ type move struct {
 	isChecking    bool
 	isEnpassant   bool
 	isPromoting   bool
+	isInitMove    bool
 }
 
 func mapChessPosToCoord(pos string) (x int, y int) {
@@ -25,10 +24,10 @@ func mapChessPosToCoord(pos string) (x int, y int) {
 	return
 }
 
-func (g *Game) GetLastMove() string {
+func (g *Game) GetLastMove() *move {
 	if len(g.moves) == 0 {
-		return ""
+		return nil
 	}
 	lastMove := g.moves[len(g.moves)-1]
-	return fmt.Sprintf("%d%d - %d%d", lastMove.start.x, lastMove.start.y, lastMove.end.x, lastMove.end.y)
+	return lastMove
 }

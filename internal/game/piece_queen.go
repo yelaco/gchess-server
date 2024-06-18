@@ -4,30 +4,26 @@ import (
 	"math"
 
 	"github.com/yelaco/robinhood-chess/internal/config"
-	"github.com/yelaco/robinhood-chess/internal/logging"
 )
 
 /*
- * Rook
+ * Queen
  */
-type rook struct {
-	white         bool
-	attachedPiece piece
+type queen struct {
+	white bool
 }
 
-func (r *rook) canMove(board *board, start *spot, end *spot) bool {
+func (q queen) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
-		logging.Info("Same location")
 		return false
 	} // same location (pointer comparison)
 
 	if end.piece != nil && start.piece.isWhite() == end.piece.isWhite() {
-		logging.Info("Same side")
 		return false
 	} // same side
 
-	if math.Abs(float64(start.x-end.x))*math.Abs(float64(start.y-end.y)) != 0.0 {
-		logging.Info("Invalid move")
+	if math.Abs(float64(start.x-end.x))*math.Abs(float64(start.y-end.y)) != 0.0 &&
+		math.Abs(float64(start.x-end.x)) != math.Abs(float64(start.y-end.y)) {
 		return false
 	} // invalid move
 
@@ -63,35 +59,20 @@ func (r *rook) canMove(board *board, start *spot, end *spot) bool {
 				return false
 			}
 		} else {
-			logging.Error("Rook canMove(): Index out of range")
 			return false
 		}
 	}
 	return true
 }
 
-func (r *rook) isWhite() bool {
-	return r.white
+func (q queen) isWhite() bool {
+	return q.white
 }
 
-func (r *rook) toUnicode() string {
-	if r.white {
-		return "♜"
+func (q queen) toUnicode() string {
+	if q.white {
+		return "♛"
 	} else {
-		return "♖"
+		return "♕"
 	}
-}
-
-func (r *rook) attach(other piece) {
-	if r.attachedPiece != nil {
-		logging.Error("The piece is still attaching to other *piece")
-	} else {
-		r.attachedPiece = other
-	}
-}
-
-func (r *rook) detach() piece {
-	detachedPiece := r.attachedPiece
-	r.attachedPiece = nil
-	return detachedPiece
 }
