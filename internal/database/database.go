@@ -1,19 +1,19 @@
 package database
 
-import (
-	"fmt"
+type DBConnection struct {
+}
 
-	"github.com/yelaco/robinhood-chess/internal/config"
-	"github.com/yelaco/robinhood-chess/internal/logging"
+func Connect() *DBConnection {
+	// cfg := config.Config()
+	// conn, err := pgx.NewConnPool(cfg)
+	// if err != nil {
+	// 	logging.Fatal(fmt.Sprintf("Unable to connect to database: %v\n", err))
+	// }
+	// return conn
 
-	"github.com/jackc/pgx"
-)
+	return nil
+}
 
-func Connect() *pgx.ConnPool {
-	cfg := config.Config()
-	conn, err := pgx.NewConnPool(cfg)
-	if err != nil {
-		logging.Fatal(fmt.Sprintf("Unable to connect to database: %v\n", err))
-	}
-	return conn
+func (dbConn *DBConnection) Close() {
+
 }

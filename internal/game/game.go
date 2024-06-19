@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/yelaco/robinhood-chess/internal/logging"
+	"github.com/yelaco/robinhood-chess/pkg/utils"
 )
 
 type GameStatus string
@@ -25,6 +26,22 @@ type Game struct {
 	moves       []*move // moves playied through out the game
 	status      GameStatus
 	kingSpots   [2]*spot
+}
+
+func GeneratePlayerIds() [2]string {
+	return [2]string{utils.GenerateUUID(), utils.GenerateUUID()}
+}
+
+func InitGame() *Game {
+	g := &Game{
+		playerIds:   GeneratePlayerIds(),
+		board:       initBoard(),
+		isWhiteTurn: true,
+		status:      active,
+	}
+	g.kingSpots[0] = g.board.boxes[4][0]
+	g.kingSpots[1] = g.board.boxes[4][7]
+	return g
 }
 
 func (g *Game) GetPlayerIds() (string, string) {

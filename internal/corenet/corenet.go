@@ -1,0 +1,5 @@
+package corenet
+
+func InitWebSocketServer() {
+
+}
