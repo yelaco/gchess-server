@@ -5,23 +5,24 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yelaco/robinhood-chess/internal/game"
+	"github.com/yelaco/robinhood-chess/internal/session"
+	"github.com/yelaco/robinhood-chess/pkg/logging"
+	"go.uber.org/zap"
 )
 
 type Matcher struct {
-	Queue    []*Player
-	Sessions map[string]*GameSession
-	mu       sync.Mutex
+	Queue []*session.Player
+	mu    sync.Mutex
 }
 
 func NewMatcher() *Matcher {
 	return &Matcher{
-		Queue:    []*Player{},
-		Sessions: make(map[string]*GameSession),
+		Queue: []*session.Player{},
+		mu:    sync.Mutex{},
 	}
 }
 
-func (m *Matcher) EnterQueue(player *Player) {
+func (m *Matcher) EnterQueue(player *session.Player) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.Queue = append(m.Queue, player)
@@ -31,9 +32,15 @@ func (m *Matcher) EnterQueue(player *Player) {
 func generateSessionId() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
+
 func (m *Matcher) findMatch() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	type gameResponse struct {
+		SessionID string `json:"sessionId"`
+		IsWhite   bool   `json:"isWhite"`
+	}
 
 	if len(m.Queue) >= 2 {
 		player1 := m.Queue[0]
@@ -41,12 +48,34 @@ func (m *Matcher) findMatch() {
 		m.Queue = m.Queue[2:]
 
 		sessionID := generateSessionId()
-		m.Sessions[sessionID] = &GameSession{
-			Players: []*Player{player1, player2},
-			Game:    game.InitGame(),
-		}
-		fmt.Printf("Match found: %s vs %s\n", player1.ID, player2.ID)
+		session.InitSession(sessionID, player1, player2)
 
-		// Notify players and game server about the new session
+		logging.Info("init match",
+			zap.String("player_1", player1.ID),
+			zap.String("player_2", player2.ID),
+		)
+
+		// Notify players the new session
+		player1.Conn.WriteJSON(gameResponse{
+			SessionID: sessionID,
+			IsWhite:   true,
+		})
+		player2.Conn.WriteJSON(gameResponse{
+			SessionID: sessionID,
+			IsWhite:   false,
+		})
 	}
 }
+
+// func (m *Matcher) JoinSession(conn *websocket.Conn, sessionID string) {
+// 	m.mu.Lock()
+// 	defer m.mu.Unlock()
+// 	session, exists := gameSessions[sessionID]
+// 	if !exists {
+// 	} else {
+// 		session.Players = append(session.Players, conn)
+// 		if len(session.Players) == 2 {
+// 			StartGame(session)
+// 		}
+// 	}
+// }
