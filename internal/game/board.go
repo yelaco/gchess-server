@@ -1,6 +1,6 @@
 package game
 
-import "github.com/yelaco/robinhood-chess/internal/config"
+import "github.com/yelaco/robinhood-chess/pkg/config"
 
 type spot struct {
 	piece piece

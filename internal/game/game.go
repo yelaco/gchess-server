@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/yelaco/robinhood-chess/internal/logging"
-	"github.com/yelaco/robinhood-chess/pkg/utils"
+	"github.com/yelaco/robinhood-chess/pkg/logging"
 )
 
 type GameStatus string
@@ -28,13 +27,9 @@ type Game struct {
 	kingSpots   [2]*spot
 }
 
-func GeneratePlayerIds() [2]string {
-	return [2]string{utils.GenerateUUID(), utils.GenerateUUID()}
-}
-
-func InitGame() *Game {
+func InitGame(playerIds [2]string) *Game {
 	g := &Game{
-		playerIds:   GeneratePlayerIds(),
+		playerIds:   playerIds,
 		board:       initBoard(),
 		isWhiteTurn: true,
 		status:      active,
@@ -42,6 +37,29 @@ func InitGame() *Game {
 	g.kingSpots[0] = g.board.boxes[4][0]
 	g.kingSpots[1] = g.board.boxes[4][7]
 	return g
+}
+
+func (g *Game) GetBoard() [8][8]string {
+	boxes := [8][8]string{}
+	for i := 7; i >= 0; i-- {
+		for j := 0; j < 8; j++ {
+			box := g.board.boxes[j][i]
+			if box.piece != nil {
+				boxes[j][i] = box.piece.toUnicode()
+			} else {
+				boxes[j][i] = ""
+			}
+		}
+	}
+
+	return boxes
+}
+
+func (g *Game) GetCurrentTurn() (bool, string) {
+	if g.isWhiteTurn {
+		return true, g.playerIds[0]
+	}
+	return false, g.playerIds[1]
 }
 
 func (g *Game) GetPlayerIds() (string, string) {
