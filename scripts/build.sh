@@ -2,7 +2,7 @@
 
 # Variables
 BINARY_NAME="robinhood_chess"
-PKG="../..."
+PKG="./cmd/game-server/main.go"
 
 # Functions
 build() {
@@ -31,6 +31,11 @@ run() {
     ./$BINARY_NAME
 }
 
+debug() {
+    echo "Debugging the application..."
+    go run $PKG
+}
+
 # Main script
 case $1 in
     build)
@@ -48,8 +53,11 @@ case $1 in
     run)
         run
         ;;
+    debug)
+        debug
+        ;;
     *)
-        echo "Usage: $0 {build|test|clean|lint|run}"
+        echo "Usage: $0 {build|test|clean|lint|run|debug}"
         exit 1
         ;;
 esac

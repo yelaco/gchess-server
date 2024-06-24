@@ -6,10 +6,15 @@ import (
 	"testing"
 
 	"github.com/yelaco/robinhood-chess/internal/game"
+	"github.com/yelaco/robinhood-chess/pkg/utils"
 )
 
+func generatePlayerIds() [2]string {
+	return [2]string{utils.GenerateUUID(), utils.GenerateUUID()}
+}
+
 func setGame(testPiece string) (*game.Game, string, string) {
-	igame := game.InitGame()
+	igame := game.InitGame(generatePlayerIds())
 	p1, p2 := igame.GetPlayerIds()
 	fmt.Printf("Player 1 ID: %s\nPlayer 2 ID: %s\n\n", p1, p2)
 	var moves []string
