@@ -22,4 +22,6 @@ func main() {
 			logging.Fatal("rest server failed to start", zap.Error(err))
 		}
 	}()
+
+	select {}
 }
