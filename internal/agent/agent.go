@@ -28,6 +28,8 @@ func NewAgent() *Agent {
 		matcher:  matcher.NewMatcher(),
 	}
 	a.wsServer.SetMessageHandler(a.handleWebSocketMessage)
+	a.wsServer.SetConnCloseGameHandler(a.playerDisconnectHandler)
+	session.SetGameOverHandler(a.handleSessionGameOver)
 
 	return a
 }
@@ -45,14 +47,56 @@ func (a *Agent) Close() {
 	a.db.Close()
 }
 
-func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Message) {
+func (a *Agent) handleSessionGameOver(s *session.GameSession, sessionID string) {
+	playerIDs := make([]string, 0, 2)
+	for id, player := range s.Players {
+		playerIDs = append(playerIDs, id)
+		player.Conn.WriteJSON(struct {
+			Type string            `json:"type"`
+			Data map[string]string `json:"data"`
+		}{
+			Type: "endgame",
+			Data: map[string]string{
+				"gameState": s.Game.GetStatus(),
+			},
+		})
+		player.Conn.Close()
+	}
+	session.CloseSession(sessionID)
+	a.matcher.RemoveSession(playerIDs[0], playerIDs[1])
+}
+
+func (a *Agent) playerDisconnectHandler(playerID string) {
+	sessionID, ok := a.matcher.SessionMap[playerID]
+	if !ok {
+		return
+	}
+
+	err := session.PlayerLeave(sessionID, playerID)
+	if err != nil {
+		logging.Warn("player disconnected error",
+			zap.String("player_id", playerID),
+			zap.String("session_id", sessionID),
+			zap.Error(err),
+		)
+	}
+
+	logging.Info("player disconnected",
+		zap.String("player_id", playerID),
+		zap.String("session_id", sessionID),
+	)
+}
+
+func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Message, connID *string) {
 	type errorResponse struct {
+		Type  string `json:"type"`
 		Error string `json:"error"`
 	}
 	switch message.Action {
 	case "matching":
 		playerId, ok := message.Data["playerId"].(string)
 		if ok {
+			connID = &playerId
 			logging.Info("attempt matchmaking",
 				zap.String("status", "queued"),
 				zap.String("player_id", playerId),
@@ -69,6 +113,7 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 				zap.String("remote_address", conn.RemoteAddr().String()),
 			)
 			conn.WriteJSON(errorResponse{
+				Type:  "error",
 				Error: "insufficient data",
 			})
 		}
@@ -92,6 +137,7 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 				zap.String("remote_address", conn.RemoteAddr().String()),
 			)
 			conn.WriteJSON(errorResponse{
+				Type:  "error",
 				Error: "insufficient data",
 			})
 		}

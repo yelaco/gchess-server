@@ -11,9 +11,10 @@ import (
 )
 
 type WebSocketServer struct {
-	address        string
-	upgrader       websocket.Upgrader
-	messageHandler func(*websocket.Conn, *Message)
+	address              string
+	upgrader             websocket.Upgrader
+	messageHandler       func(*websocket.Conn, *Message, *string)
+	connCloseGameHandler func(string)
 }
 
 type Message struct {
@@ -34,8 +35,12 @@ func NewWebSocketServer() *WebSocketServer {
 	}
 }
 
-func (s *WebSocketServer) SetMessageHandler(msgHandler func(*websocket.Conn, *Message)) {
+func (s *WebSocketServer) SetMessageHandler(msgHandler func(*websocket.Conn, *Message, *string)) {
 	s.messageHandler = msgHandler
+}
+
+func (s *WebSocketServer) SetConnCloseGameHandler(ccgHandler func(string)) {
+	s.connCloseGameHandler = ccgHandler
 }
 
 func (s *WebSocketServer) Start() error {
@@ -46,10 +51,15 @@ func (s *WebSocketServer) Start() error {
 			return
 		}
 		defer conn.Close()
+		var connID *string
+		conn.SetCloseHandler(func(code int, text string) error {
+			s.connCloseGameHandler(*connID)
+			return conn.CloseHandler()(code, text)
+		})
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseMessage) {
+				if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseMessage, websocket.CloseMessage) {
 					logging.Info("connection closed", zap.String("remote_address", conn.RemoteAddr().String()))
 				} else if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					logging.Info("unexpected close error", zap.String("remote_address", conn.RemoteAddr().String()))
@@ -61,7 +71,7 @@ func (s *WebSocketServer) Start() error {
 
 			msg := Message{}
 			json.Unmarshal(message, &msg)
-			s.messageHandler(conn, &msg)
+			s.messageHandler(conn, &msg, connID)
 		}
 	})
 	logging.Info("websocket server started", zap.String("port", config.Port))

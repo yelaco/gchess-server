@@ -55,11 +55,25 @@ func (g *Game) GetBoard() [8][8]string {
 	return boxes
 }
 
+func (g *Game) GetStatus() string {
+	return string(g.status)
+}
+
 func (g *Game) GetCurrentTurn() (bool, string) {
 	if g.isWhiteTurn {
 		return true, g.playerIds[0]
 	}
 	return false, g.playerIds[1]
+}
+
+func (g *Game) GetPlayerSide(playerID string) (bool, error) {
+	if g.playerIds[0] == playerID {
+		return true, nil
+	} else if g.playerIds[1] == playerID {
+		return false, nil
+	} else {
+		return false, errors.New("invalid player id")
+	}
 }
 
 func (g *Game) GetPlayerIds() (string, string) {
