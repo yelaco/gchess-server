@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/yelaco/robinhood-chess/internal/game"
-	"github.com/yelaco/robinhood-chess/pkg/logging"
+	"github.com/yelaco/go-chess-server/internal/game"
+	"github.com/yelaco/go-chess-server/pkg/logging"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +24,7 @@ type GameState struct {
 }
 
 type PlayerState struct {
-	IsWhiteSide bool
+	IsWhiteSide bool `json:"is_white_side"`
 }
 
 var gameSessions = make(map[string]*GameSession)
@@ -117,16 +117,18 @@ func PlayerLeave(sessionID, playerID string) error {
 
 func ProcessMove(sessionID, playerID, move string) {
 	mu.Lock()
-	defer mu.Unlock()
+
+	type errorResponse struct {
+		Type  string `json:"type"`
+		Error string `json:"error"`
+	}
+
 	session, exists := gameSessions[sessionID]
 	if exists {
 		pos := strings.Split(move, "-")
 		err := session.Game.MakeMove(playerID, pos[0], pos[1])
 		if err != nil {
-			type errorResponse struct {
-				Type  string `json:"type"`
-				Error string `json:"error"`
-			}
+
 			logging.Warn("invalid move",
 				zap.String("session_id", sessionID),
 				zap.String("player_id", playerID),
@@ -145,9 +147,23 @@ func ProcessMove(sessionID, playerID, move string) {
 			zap.String("player_id", playerID),
 			zap.String("move", move),
 		)
+
+		mu.Unlock()
+
 		// notify players about the new board state
 		for _, player := range session.Players {
-			player.Conn.WriteJSON(session.Game.GetBoard())
+			gameState, err := GetGameState(sessionID)
+			if err != nil {
+				logging.Error("invalid session id for game state")
+				player.Conn.WriteJSON(errorResponse{
+					Type:  "error",
+					Error: "coulnd't retrieve game state",
+				})
+				return
+			}
+			if err := player.Conn.WriteJSON(gameState); err != nil {
+				logging.Error("couldn't notify player ", zap.String("player_id", playerID))
+			}
 		}
 
 		if session.Game.IsOver() {
