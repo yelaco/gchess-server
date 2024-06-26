@@ -73,10 +73,6 @@ func TestWebSocketServer(t *testing.T) {
 	}
 }
 
-func TestConnCloseGameHandler(t *testing.T) {
-
-}
-
 func setupWebSocketServer() {
 	wsServer := NewWebSocketServer()
 	wsServer.SetMessageHandler(messageHandler)
