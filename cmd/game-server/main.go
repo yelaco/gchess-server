@@ -1,15 +1,17 @@
 package main
 
 import (
-	"github.com/yelaco/robinhood-chess/internal/agent"
-	"github.com/yelaco/robinhood-chess/internal/api"
-	"github.com/yelaco/robinhood-chess/pkg/config"
-	"github.com/yelaco/robinhood-chess/pkg/logging"
+	"github.com/yelaco/go-chess-server/internal/agent"
+	"github.com/yelaco/go-chess-server/internal/api"
+	"github.com/yelaco/go-chess-server/pkg/config"
+	"github.com/yelaco/go-chess-server/pkg/logging"
 	"go.uber.org/zap"
 )
 
 func main() {
 	agent := agent.NewAgent()
+
+	// log.Fatal(agent.StartGameServer())
 
 	go func() {
 		if err := agent.StartGameServer(); err != nil {
