@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/yelaco/robinhood-chess/pkg/config"
-	"github.com/yelaco/robinhood-chess/pkg/logging"
+	"github.com/yelaco/go-chess-server/pkg/config"
+	"github.com/yelaco/go-chess-server/pkg/logging"
 	"go.uber.org/zap"
 )
 
@@ -58,9 +58,9 @@ func (s *WebSocketServer) Start() error {
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseMessage, websocket.CloseMessage) {
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseMessage, websocket.CloseMessage) {
 					logging.Info("connection closed", zap.String("remote_address", conn.RemoteAddr().String()))
-				} else if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				} else if websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					logging.Info("unexpected close error", zap.String("remote_address", conn.RemoteAddr().String()))
 				} else {
 					logging.Error("ws message read error", zap.String("remote_address", conn.RemoteAddr().String()))
