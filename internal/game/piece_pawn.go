@@ -3,7 +3,7 @@ package game
 import (
 	"math"
 
-	"github.com/yelaco/robinhood-chess/pkg/logging"
+	"github.com/yelaco/go-chess-server/pkg/logging"
 )
 
 /*

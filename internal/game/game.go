@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/yelaco/robinhood-chess/pkg/logging"
+	"github.com/yelaco/go-chess-server/pkg/logging"
 )
 
 type GameStatus string
@@ -328,6 +328,7 @@ func (g *Game) updateBoard(move *move) {
 			g.board.boxes[move.end.x][move.start.y].piece = nil
 		} else if move.isPromoting {
 			move.end.piece = p.promote("queen")
+			move.piecePromoted = move.end.piece
 		}
 	case *king:
 		if !p.initMoved {
