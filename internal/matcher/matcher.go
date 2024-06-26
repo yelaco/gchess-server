@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/yelaco/robinhood-chess/internal/session"
 	"github.com/yelaco/robinhood-chess/pkg/logging"
 	"go.uber.org/zap"
@@ -13,21 +14,22 @@ import (
 type Matcher struct {
 	Queue      []*session.Player
 	SessionMap map[string]string
+	PlayerMap  map[*websocket.Conn]string
 	mu         sync.Mutex
 }
 
 type matchResponse struct {
-	Type        string       `json:"type"`
-	SessionID   string       `json:"sessionId"`
-	IsWhite     bool         `json:"isWhite"`
-	Board       [8][8]string `json:"board"`
-	IsWhiteTurn bool         `json:"isWhiteTurn"`
+	Type        string              `json:"type"`
+	SessionID   string              `json:"session_id"`
+	GameState   session.GameState   `json:"game_state"`
+	PlayerState session.PlayerState `json:"player_state"`
 }
 
 func NewMatcher() *Matcher {
 	return &Matcher{
 		Queue:      []*session.Player{},
 		SessionMap: map[string]string{},
+		PlayerMap:  map[*websocket.Conn]string{},
 		mu:         sync.Mutex{},
 	}
 }
@@ -67,43 +69,37 @@ func (m *Matcher) findMatch() {
 			zap.String("player_2", player2.ID),
 		)
 
-		// Notify players the new session
-		player1.Conn.WriteJSON(matchResponse{
-			Type:      "matched",
-			SessionID: sessionID,
-			IsWhite:   true,
-		})
-		player2.Conn.WriteJSON(matchResponse{
-			Type:      "matched",
-			SessionID: sessionID,
-			IsWhite:   false,
-		})
+		notifyMatchingResult(sessionID, player1)
+		notifyMatchingResult(sessionID, player2)
 	}
 }
 
 func (m *Matcher) RejoinMatch(sessionID string, player *session.Player) {
-	isWhiteSide, err := session.GetPlayerSide(sessionID, player.ID)
+	notifyMatchingResult(sessionID, player)
+}
+
+func notifyMatchingResult(sessionID string, player *session.Player) {
+	gameState, err := session.GetGameState(sessionID)
 	if err != nil {
 		player.Conn.WriteJSON(struct {
 			Type  string `json:"type"`
 			Error string `json:"error"`
 		}{
 			Type:  "error",
-			Error: "Coulnd't rejoin match: " + err.Error(),
+			Error: "Coulnd't join match: " + err.Error(),
 		})
 		return
 	}
 
-	board, isWhiteTurn, err := session.GetGameState(sessionID)
+	playerState, err := session.GetPlayerState(sessionID, player.ID)
 	if err != nil {
 		player.Conn.WriteJSON(struct {
 			Type  string `json:"type"`
 			Error string `json:"error"`
 		}{
 			Type:  "error",
-			Error: "Coulnd't rejoin match: " + err.Error(),
+			Error: "Coulnd't join match: " + err.Error(),
 		})
-		return
 	}
 
 	session.PlayerJoin(sessionID, player)
@@ -111,9 +107,8 @@ func (m *Matcher) RejoinMatch(sessionID string, player *session.Player) {
 	player.Conn.WriteJSON(matchResponse{
 		Type:        "matched",
 		SessionID:   sessionID,
-		IsWhite:     isWhiteSide,
-		Board:       board,
-		IsWhiteTurn: isWhiteTurn,
+		GameState:   gameState,
+		PlayerState: playerState,
 	})
 }
 

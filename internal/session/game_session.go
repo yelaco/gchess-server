@@ -17,8 +17,18 @@ type GameSession struct {
 	Game    *game.Game
 }
 
+type GameState struct {
+	Status      string       `json:"status"`
+	Board       [8][8]string `json:"board"`
+	IsWhiteTurn bool         `json:"is_white"`
+}
+
+type PlayerState struct {
+	IsWhiteSide bool
+}
+
 var gameSessions = make(map[string]*GameSession)
-var mu sync.Mutex
+var mu sync.RWMutex
 var gameOverHandler = func(session *GameSession, sessionID string) {
 	CloseSession(sessionID)
 	for _, player := range session.Players {
@@ -54,23 +64,34 @@ func StartGame(session *GameSession) {
 	}
 }
 
-func GetPlayerSide(sessionID, playerID string) (bool, error) {
-	mu.Lock()
-	defer mu.Unlock()
+func GetGameState(sessionID string) (GameState, error) {
+	mu.RLock()
+	defer mu.RUnlock()
 	session, exists := gameSessions[sessionID]
 	if exists {
-		return session.Game.GetPlayerSide(playerID)
+		return GameState{
+			Status:      session.Game.GetStatus(),
+			Board:       session.Game.GetBoard(),
+			IsWhiteTurn: session.Game.GetCurrentTurn(),
+		}, nil
 	}
-	return false, errors.New("invalid session id")
+	return GameState{}, errors.New("invalid session id")
 }
 
-func GetGameState(sessionID string) ([8][8]string, bool, error) {
+func GetPlayerState(sessionID, playerID string) (PlayerState, error) {
+	mu.RLock()
+	defer mu.RUnlock()
 	session, exists := gameSessions[sessionID]
 	if exists {
-		isWhiteTurn, _ := session.Game.GetCurrentTurn()
-		return session.Game.GetBoard(), isWhiteTurn, nil
+		isWhiteSide, err := session.Game.GetPlayerSide(playerID)
+		if err != nil {
+			return PlayerState{}, errors.New("invalid player id")
+		}
+		return PlayerState{
+			IsWhiteSide: isWhiteSide,
+		}, nil
 	}
-	return [8][8]string{}, false, errors.New("invalid session id")
+	return PlayerState{}, errors.New("invalid session id")
 }
 
 func PlayerJoin(sessionID string, player *Player) error {

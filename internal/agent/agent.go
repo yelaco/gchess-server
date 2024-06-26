@@ -66,7 +66,11 @@ func (a *Agent) handleSessionGameOver(s *session.GameSession, sessionID string) 
 	a.matcher.RemoveSession(playerIDs[0], playerIDs[1])
 }
 
-func (a *Agent) playerDisconnectHandler(playerID string) {
+func (a *Agent) playerDisconnectHandler(conn *websocket.Conn) {
+	playerID, ok := a.matcher.PlayerMap[conn]
+	if !ok {
+		return
+	}
 	sessionID, ok := a.matcher.SessionMap[playerID]
 	if !ok {
 		return
@@ -87,7 +91,7 @@ func (a *Agent) playerDisconnectHandler(playerID string) {
 	)
 }
 
-func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Message, connID *string) {
+func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Message) {
 	type errorResponse struct {
 		Type  string `json:"type"`
 		Error string `json:"error"`
@@ -96,7 +100,6 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 	case "matching":
 		playerId, ok := message.Data["playerId"].(string)
 		if ok {
-			connID = &playerId
 			logging.Info("attempt matchmaking",
 				zap.String("status", "queued"),
 				zap.String("player_id", playerId),
@@ -142,6 +145,5 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 			})
 		}
 	default:
-
 	}
 }
