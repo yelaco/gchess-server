@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/yelaco/robinhood-chess/internal/session"
-	"github.com/yelaco/robinhood-chess/pkg/logging"
+	"github.com/yelaco/go-chess-server/internal/session"
+	"github.com/yelaco/go-chess-server/pkg/logging"
 	"go.uber.org/zap"
 )
 
