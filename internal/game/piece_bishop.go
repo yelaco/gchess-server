@@ -11,11 +11,10 @@ import (
  * Bishop
  */
 type bishop struct {
-	white         bool
-	attachedPiece piece
+	white bool
 }
 
-func (b bishop) canMove(board *board, start *spot, end *spot) bool {
+func (b *bishop) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
 		return false
 	} // same location (pointer comparison)
@@ -78,18 +77,4 @@ func (b bishop) toUnicode() string {
 	} else {
 		return "♗"
 	}
-}
-
-func (b *bishop) attach(other piece) {
-	if b.attachedPiece != nil {
-		logging.Error("The piece is still attaching to other *piece")
-	} else {
-		b.attachedPiece = other
-	}
-}
-
-func (b *bishop) detach() piece {
-	detachedPiece := b.attachedPiece
-	b.attachedPiece = nil
-	return detachedPiece
 }

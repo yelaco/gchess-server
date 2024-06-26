@@ -2,19 +2,16 @@ package game
 
 import (
 	"math"
-
-	"github.com/yelaco/robinhood-chess/pkg/logging"
 )
 
 /*
  * Knight
  */
 type knight struct {
-	white         bool
-	attachedPiece piece
+	white bool
 }
 
-func (k knight) canMove(board *board, start *spot, end *spot) bool {
+func (k *knight) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
 		return false
 	} // same location (pointer comparison)
@@ -40,18 +37,4 @@ func (k knight) toUnicode() string {
 	} else {
 		return "♘"
 	}
-}
-
-func (k *knight) attach(other piece) {
-	if k.attachedPiece != nil {
-		logging.Error("The piece is still attaching to other *piece")
-	} else {
-		k.attachedPiece = other
-	}
-}
-
-func (k *knight) detach() piece {
-	detachedPiece := k.attachedPiece
-	k.attachedPiece = nil
-	return detachedPiece
 }

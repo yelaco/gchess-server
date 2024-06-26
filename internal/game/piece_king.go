@@ -16,7 +16,7 @@ type king struct {
 	initMoved bool
 }
 
-func (k king) canMove(board *board, start *spot, end *spot) bool {
+func (k *king) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
 		return false
 	}
@@ -94,7 +94,7 @@ func (k *king) canCastling(board *board, start *spot, end *spot) bool {
 		return false
 	}
 
-	if r, ok := end.piece.(rook); !ok || r.initMoved {
+	if r, ok := end.piece.(*rook); !ok || r.initMoved {
 		return false
 	}
 

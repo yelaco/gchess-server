@@ -100,7 +100,28 @@ func (g *Game) checkAndNextTurn(move *move) {
 	}
 }
 
+func (g *Game) updateKingSpots() {
+	wk, isWk := g.kingSpots[0].piece.(*king)
+	bk, isBk := g.kingSpots[1].piece.(*king)
+	if isWk && isBk && wk.isWhite() && !bk.isWhite() {
+		return
+	}
+
+	for x := 0; x < 8; x++ {
+		for y := 0; y < 8; y++ {
+			if k, ok := g.board.boxes[x][y].piece.(*king); ok {
+				if k.isWhite() {
+					g.kingSpots[0] = g.board.boxes[x][y]
+				} else {
+					g.kingSpots[1] = g.board.boxes[x][y]
+				}
+			}
+		}
+	}
+}
+
 func (g *Game) kingInCheck() bool {
+	g.updateKingSpots()
 	var kingSpot *spot
 	if g.isWhiteTurn {
 		kingSpot = g.kingSpots[0]
@@ -117,11 +138,9 @@ func (g *Game) kingInCheck() bool {
 				continue
 			}
 			if box.piece.canMove(g.board, box, kingSpot) {
-				if k, ok := kingSpot.piece.(king); ok {
+				if k, ok := kingSpot.piece.(*king); ok {
 					k.inCheck = true
 					return true
-				} else {
-					k.inCheck = false
 				}
 			}
 		}
@@ -153,7 +172,7 @@ func (g *Game) kingInCheckmate() bool {
 		}
 	}
 
-	king, ok := kingSpot.piece.(king)
+	king, ok := kingSpot.piece.(*king)
 	if !ok {
 		logging.Error("kingInCheckmate(): king not in spot")
 	}
@@ -198,10 +217,10 @@ func (g *Game) kingInCheckmate() bool {
 
 	// second by block the attack
 	// with knight or pawn checking, there aren't any spots in between to block the attack
-	if _, ok := threatSpot.piece.(knight); ok {
+	if _, ok := threatSpot.piece.(*knight); ok {
 		return true
 	}
-	if _, ok := threatSpot.piece.(pawn); ok {
+	if _, ok := threatSpot.piece.(*pawn); ok {
 		return true
 	}
 
@@ -259,13 +278,46 @@ func (g *Game) kingInCheckmate() bool {
 }
 
 func (g *Game) isStalemate() bool {
-	return false
+	for i := 0; i < 8; i++ {
+		for j := 0; j < 8; j++ {
+			box := g.board.boxes[i][j]
+			if box.piece == nil {
+				continue
+			}
+			if box.piece.isWhite() != g.isWhiteTurn {
+				continue
+			}
+
+			for x := 0; x < 8; x++ {
+				for y := 0; y < 8; y++ {
+					if !box.piece.canMove(g.board, box, g.board.boxes[x][y]) {
+						continue
+					}
+
+					tmpPiece := g.board.boxes[x][y].piece
+					g.board.boxes[x][y].piece = box.piece
+					box.piece = nil
+
+					if !g.kingInCheck() {
+						box.piece = g.board.boxes[x][y].piece
+						g.board.boxes[x][y].piece = tmpPiece
+						return false
+					}
+
+					box.piece = g.board.boxes[x][y].piece
+					g.board.boxes[x][y].piece = tmpPiece
+				}
+			}
+		}
+	}
+
+	return true
 }
 
 func (g *Game) updateBoard(move *move) {
 	move.start.piece = nil
 	switch p := move.pieceMoved.(type) {
-	case pawn:
+	case *pawn:
 		move.end.piece = move.pieceMoved
 		if !p.initMoved {
 			move.isInitMove = true
@@ -277,7 +329,7 @@ func (g *Game) updateBoard(move *move) {
 		} else if move.isPromoting {
 			move.end.piece = p.promote("queen")
 		}
-	case king:
+	case *king:
 		if !p.initMoved {
 			move.isInitMove = true
 			p.initMoved = true
@@ -312,7 +364,7 @@ func (g *Game) updateBoard(move *move) {
 				g.kingSpots[0] = move.end
 			}
 		}
-	case rook:
+	case *rook:
 		if !p.initMoved {
 			move.isInitMove = true
 			p.initMoved = true
@@ -371,7 +423,7 @@ func (g *Game) checkMove(move *move) error {
 
 	// check valid move
 	switch p := srcPiece.(type) {
-	case pawn:
+	case *pawn:
 		if !p.canMove(g.board, move.start, move.end) {
 			if p.canEnpassant(move.start, move.end, g.GetLastMove()) {
 				move.isEnpassant = true
@@ -382,7 +434,7 @@ func (g *Game) checkMove(move *move) error {
 		if move.end.y == 7 || move.end.y == 0 {
 			move.isPromoting = true
 		}
-	case king:
+	case *king:
 		move.isCastling = isCastlingMove(move.start.x, move.start.y, move.end.x, move.end.y)
 		if !p.canMove(g.board, move.start, move.end) {
 			return fmt.Errorf("invalid king move: %s-%s", move.startPos, move.endPos)

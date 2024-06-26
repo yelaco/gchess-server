@@ -5,8 +5,3 @@ type piece interface {
 	isWhite() bool
 	toUnicode() string
 }
-
-type combine interface {
-	attach(piece)
-	detach(piece)
-}

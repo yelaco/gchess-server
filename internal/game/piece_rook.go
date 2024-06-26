@@ -11,12 +11,11 @@ import (
  * Rook
  */
 type rook struct {
-	white         bool
-	attachedPiece piece
-	initMoved     bool
+	white     bool
+	initMoved bool
 }
 
-func (r rook) canMove(board *board, start *spot, end *spot) bool {
+func (r *rook) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
 		return false
 	} // same location (pointer comparison)
@@ -78,18 +77,4 @@ func (r rook) toUnicode() string {
 	} else {
 		return "♖"
 	}
-}
-
-func (r *rook) attach(other piece) {
-	if r.attachedPiece != nil {
-		logging.Error("The piece is still attaching to other *piece")
-	} else {
-		r.attachedPiece = other
-	}
-}
-
-func (r *rook) detach() piece {
-	detachedPiece := r.attachedPiece
-	r.attachedPiece = nil
-	return detachedPiece
 }

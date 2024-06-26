@@ -13,7 +13,7 @@ type queen struct {
 	white bool
 }
 
-func (q queen) canMove(board *board, start *spot, end *spot) bool {
+func (q *queen) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
 		return false
 	} // same location (pointer comparison)

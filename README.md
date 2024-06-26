@@ -1,7 +1,5 @@
-# Robinhood Chess
+# Go Chess Platform
 
-A variation of the classic chess.
-
-Currently testing 
+A platform for playing chess
 
 ![image](https://github.com/yelaco/robinhood-chess/assets/100106895/acaf8368-a951-44ae-a0f1-469151655689)

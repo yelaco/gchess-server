@@ -3,7 +3,6 @@ package game
 import (
 	"math"
 
-	"github.com/yelaco/robinhood-chess/pkg/config"
 	"github.com/yelaco/robinhood-chess/pkg/logging"
 )
 
@@ -11,12 +10,11 @@ import (
  * Pawn
  */
 type pawn struct {
-	white         bool
-	attachedPiece piece
-	initMoved     bool // 2 step init move
+	white     bool
+	initMoved bool // 2 step init move
 }
 
-func (p pawn) canMove(board *board, start *spot, end *spot) bool {
+func (p *pawn) canMove(board *board, start *spot, end *spot) bool {
 	if start == end {
 		return false
 	} // same location (pointer comparison)
@@ -40,10 +38,10 @@ func (p pawn) canMove(board *board, start *spot, end *spot) bool {
 		if end.piece != nil {
 			return false
 		}
-		if math.Abs(float64(end.y-start.y)) == 2.0 {
-			direction := (end.y - start.y) / 2
+		if direction := end.y - start.y; direction == 2 || direction == -2 {
+			direction /= 2
 
-			if start.y+direction < config.BoardLen {
+			if start.y+direction < 8 {
 				if board.boxes[start.x][start.y+direction].piece != nil {
 					return false
 				}
@@ -54,7 +52,7 @@ func (p pawn) canMove(board *board, start *spot, end *spot) bool {
 		}
 		return true
 	} else {
-		if math.Abs(float64(end.y-start.y)) == 2.0 {
+		if direction := end.y - start.y; direction == 2 || direction == -2 {
 			return false
 		}
 		return end.piece != nil
@@ -65,7 +63,7 @@ func (p pawn) canEnpassant(start *spot, end *spot, lastMove *move) bool {
 	if lastMove == nil {
 		return false
 	}
-	_, ok := lastMove.pieceMoved.(pawn)
+	_, ok := lastMove.pieceMoved.(*pawn)
 	return ok && lastMove.isInitMove && lastMove.end.y == start.y && lastMove.end.x == end.x
 }
 
@@ -92,21 +90,7 @@ func (p pawn) promote(pieceName string) piece {
 	case "queen":
 		return &queen{white: p.white}
 	default:
-		logging.Fatal("Pawn promoted to UNDEFINED")
+		logging.Error("Pawn promoted to UNDEFINED")
 		return nil
 	}
-}
-
-func (p *pawn) attach(other piece) {
-	if p.attachedPiece != nil {
-		logging.Error("The piece is still attaching to other *piece")
-	} else {
-		p.attachedPiece = other
-	}
-}
-
-func (p *pawn) detach() piece {
-	detachedPiece := p.attachedPiece
-	p.attachedPiece = nil
-	return detachedPiece
 }

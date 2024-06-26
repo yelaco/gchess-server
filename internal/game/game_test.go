@@ -1,11 +1,10 @@
-package test
+package game
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/yelaco/robinhood-chess/internal/game"
 	"github.com/yelaco/robinhood-chess/pkg/utils"
 )
 
@@ -13,14 +12,14 @@ func generatePlayerIds() [2]string {
 	return [2]string{utils.GenerateUUID(), utils.GenerateUUID()}
 }
 
-func setGame(testPiece string) (*game.Game, string, string) {
-	igame := game.InitGame(generatePlayerIds())
+func setGame(testPiece string) (*Game, string, string) {
+	igame := InitGame(generatePlayerIds())
 	p1, p2 := igame.GetPlayerIds()
 	fmt.Printf("Player 1 ID: %s\nPlayer 2 ID: %s\n\n", p1, p2)
 	var moves []string
 	switch testPiece {
 	case "pawn":
-		moves = []string{"d2-d4", "b8-c6", "d4-d5", "e7-e5", "d5-e6", "a7-a6", "e6-d7", "d8-d7"}
+		moves = []string{"e2-e4", "e7-e5", "d2-d4"}
 	case "bishop":
 		moves = []string{"d2-d4", "e7-e5"}
 	case "knight":
@@ -30,7 +29,11 @@ func setGame(testPiece string) (*game.Game, string, string) {
 	case "queen":
 		moves = []string{"e2-e4", "e7-e5"}
 	case "king":
-		moves = []string{"e2-e4", "e7-e5", "f1-c4", "f7-f6", "g1-f3", "f8-c5", "e1-h1", "g8-h6", "f1-e1", "d7-d5", "a2-a3", "e8-h8"}
+		moves = []string{"e2-e4", "e7-e5", "f1-c4", "f7-f6", "g1-f3", "f8-c5"}
+	case "stalemate":
+		moves = []string{"e2-e3", "a7-a5", "d1-h5", "a8-a6", "h5-a5", "h7-h5", "h2-h4", "a6-h6",
+			"a5-c7", "f7-f6", "c7-d7", "e8-f7", "d7-b7", "d8-d3", "b7-b8", "d3-h7",
+			"b8-c8", "f7-g6", "c8-e6"}
 	default:
 	}
 	for i, move := range moves {
@@ -53,11 +56,9 @@ func setGame(testPiece string) (*game.Game, string, string) {
 }
 
 func TestPawn(t *testing.T) {
-	igame, p1, _ := setGame("pawn")
+	igame, _, p2 := setGame("pawn")
 
-	// err := igame.MakeMove(p1, "d4", "d6")
-	// err := igame.MakeMove(p1, "d4", "e5")
-	err := igame.MakeMove(p1, "d7", "c8")
+	err := igame.MakeMove(p2, "e5", "d4")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -97,7 +98,7 @@ func TestQueen(t *testing.T) {
 	igame, p1, _ := setGame("queen")
 	err := igame.MakeMove(p1, "d1", "g4")
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
 	igame.PrintBoard()
 }
@@ -106,7 +107,15 @@ func TestKing(t *testing.T) {
 	igame, p1, _ := setGame("king")
 	err := igame.MakeMove(p1, "e1", "h1")
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
+	}
+	igame.PrintBoard()
+}
+
+func TestStalemate(t *testing.T) {
+	igame, _, _ := setGame("stalemate")
+	if igame.GetStatus() != "STALEMATE" {
+		t.Errorf("Test stalemate: got %s, want %s", igame.GetStatus(), "STALEMATE")
 	}
 	igame.PrintBoard()
 }
