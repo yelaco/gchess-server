@@ -59,11 +59,8 @@ func (g *Game) GetStatus() string {
 	return string(g.status)
 }
 
-func (g *Game) GetCurrentTurn() (bool, string) {
-	if g.isWhiteTurn {
-		return true, g.playerIds[0]
-	}
-	return false, g.playerIds[1]
+func (g *Game) GetCurrentTurn() bool {
+	return g.isWhiteTurn
 }
 
 func (g *Game) GetPlayerSide(playerID string) (bool, error) {
