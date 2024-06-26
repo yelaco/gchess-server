@@ -2,11 +2,11 @@ package agent
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/yelaco/robinhood-chess/internal/corenet"
-	"github.com/yelaco/robinhood-chess/internal/database"
-	"github.com/yelaco/robinhood-chess/internal/matcher"
-	"github.com/yelaco/robinhood-chess/internal/session"
-	"github.com/yelaco/robinhood-chess/pkg/logging"
+	"github.com/yelaco/go-chess-server/internal/corenet"
+	"github.com/yelaco/go-chess-server/internal/database"
+	"github.com/yelaco/go-chess-server/internal/matcher"
+	"github.com/yelaco/go-chess-server/internal/session"
+	"github.com/yelaco/go-chess-server/pkg/logging"
 	"go.uber.org/zap"
 )
 
@@ -98,16 +98,16 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 	}
 	switch message.Action {
 	case "matching":
-		playerId, ok := message.Data["playerId"].(string)
+		playerID, ok := message.Data["player_id"].(string)
 		if ok {
 			logging.Info("attempt matchmaking",
 				zap.String("status", "queued"),
-				zap.String("player_id", playerId),
+				zap.String("player_id", playerID),
 				zap.String("remote_address", conn.RemoteAddr().String()),
 			)
 			a.matcher.EnterQueue(&session.Player{
 				Conn: conn,
-				ID:   playerId,
+				ID:   playerID,
 			})
 		} else {
 			logging.Info("attempt matchmaking",
@@ -121,18 +121,18 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 			})
 		}
 	case "move":
-		playerId, playerOK := message.Data["playerId"].(string)
-		sessionId, sessionOK := message.Data["sessionId"].(string)
+		playerID, playerOK := message.Data["player_id"].(string)
+		sessionID, sessionOK := message.Data["session_id"].(string)
 		move, moveOK := message.Data["move"].(string)
 		if playerOK && sessionOK && moveOK {
 			logging.Info("attempt making move",
 				zap.String("status", "processing"),
-				zap.String("player_id", playerId),
-				zap.String("session_id", sessionId),
+				zap.String("player_id", playerID),
+				zap.String("session_id", sessionID),
 				zap.String("move", move),
 				zap.String("remote_address", conn.RemoteAddr().String()),
 			)
-			session.ProcessMove(sessionId, playerId, move)
+			session.ProcessMove(sessionID, playerID, move)
 		} else {
 			logging.Info("attempt making move",
 				zap.String("status", "rejected"),
