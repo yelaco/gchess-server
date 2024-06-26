@@ -21,7 +21,7 @@ var (
 func init() {
 	viper.SetConfigName("config") // name of config flie (no extension)
 	viper.SetConfigType("json")
-	viper.AddConfigPath("$HOME/workspace/projects/robinhood-chess/.robinhood/")
+	viper.AddConfigPath("$HOME/workspace/projects/go-chess-server/.go-chess-server/")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %s", err))
