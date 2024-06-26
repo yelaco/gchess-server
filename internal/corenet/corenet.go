@@ -13,8 +13,8 @@ import (
 type WebSocketServer struct {
 	address              string
 	upgrader             websocket.Upgrader
-	messageHandler       func(*websocket.Conn, *Message, *string)
-	connCloseGameHandler func(string)
+	messageHandler       func(*websocket.Conn, *Message)
+	connCloseGameHandler func(*websocket.Conn)
 }
 
 type Message struct {
@@ -35,11 +35,11 @@ func NewWebSocketServer() *WebSocketServer {
 	}
 }
 
-func (s *WebSocketServer) SetMessageHandler(msgHandler func(*websocket.Conn, *Message, *string)) {
+func (s *WebSocketServer) SetMessageHandler(msgHandler func(*websocket.Conn, *Message)) {
 	s.messageHandler = msgHandler
 }
 
-func (s *WebSocketServer) SetConnCloseGameHandler(ccgHandler func(string)) {
+func (s *WebSocketServer) SetConnCloseGameHandler(ccgHandler func(*websocket.Conn)) {
 	s.connCloseGameHandler = ccgHandler
 }
 
@@ -51,9 +51,8 @@ func (s *WebSocketServer) Start() error {
 			return
 		}
 		defer conn.Close()
-		var connID *string
 		conn.SetCloseHandler(func(code int, text string) error {
-			s.connCloseGameHandler(*connID)
+			s.connCloseGameHandler(conn)
 			return conn.CloseHandler()(code, text)
 		})
 		for {
@@ -70,8 +69,10 @@ func (s *WebSocketServer) Start() error {
 			}
 
 			msg := Message{}
-			json.Unmarshal(message, &msg)
-			s.messageHandler(conn, &msg, connID)
+			if err := json.Unmarshal(message, &msg); err != nil {
+				conn.Close()
+			}
+			s.messageHandler(conn, &msg)
 		}
 	})
 	logging.Info("websocket server started", zap.String("port", config.Port))
