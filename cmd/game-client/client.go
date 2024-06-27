@@ -21,11 +21,6 @@ import (
 	"github.com/yelaco/go-chess-server/pkg/config"
 )
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
 type matchResponse struct {
 	Type        string              `json:"type"`
 	SessionID   string              `json:"session_id"`
@@ -33,14 +28,30 @@ type matchResponse struct {
 	PlayerState session.PlayerState `json:"player_state"`
 }
 
-var currentUser *User
-var playerID string
-var loginForm *tview.Form
-var registerForm *tview.Form
+type User struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+var (
+	app          *tview.Application
+	loginForm    *tview.Form
+	registerForm *tview.Form
+	currentUser  *User
+	playerID     string
+	gameResult   string
+)
 
 func main() {
-	app := tview.NewApplication()
+	app = tview.NewApplication()
 
+	setupForms(app)
+
+	app.SetRoot(mainMenu(), true).Run()
+
+}
+
+func setupForms(app *tview.Application) {
 	loginForm = tview.NewForm().
 		AddInputField("Username", "", 20, nil, nil).
 		AddPasswordField("Password", "", 20, '*', nil).
@@ -48,17 +59,10 @@ func main() {
 			username := loginForm.GetFormItemByLabel("Username").(*tview.InputField).GetText()
 			password := loginForm.GetFormItemByLabel("Password").(*tview.InputField).GetText()
 			user := User{Username: username, Password: password}
-			token, err := login(user)
-			if err != nil {
-				log.Printf("Login failed: %v", err)
-				return
-			}
-			currentUser = &user
-			playerID = token
-			app.SetRoot(postLoginMenu(app), true).Run()
+			login(user)
 		}).
 		AddButton("Back", func() {
-			app.SetRoot(mainMenu(app), true).Run()
+			app.SetRoot(mainMenu(), true).Run()
 		})
 
 	registerForm = tview.NewForm().
@@ -68,19 +72,191 @@ func main() {
 			username := registerForm.GetFormItemByLabel("Username").(*tview.InputField).GetText()
 			password := registerForm.GetFormItemByLabel("Password").(*tview.InputField).GetText()
 			user := User{Username: username, Password: password}
-			err := register(user)
-			if err != nil {
-				log.Printf("Register failed: %v", err)
-				return
-			}
-			fmt.Println("Register successful!")
-			app.SetRoot(mainMenu(app), true).Run()
+			register(user)
 		}).
 		AddButton("Back", func() {
-			app.SetRoot(mainMenu(app), true).Run()
+			app.SetRoot(mainMenu(), true).Run()
+		})
+}
+
+func mainMenu() *tview.Flex {
+	headerBox := tview.NewBox().
+		SetBorder(true).
+		SetTitle("Go Chess Server").
+		SetTitleAlign(tview.AlignLeft)
+
+	headerText := tview.NewTextView().
+		SetDynamicColors(true).
+		SetTextAlign(tview.AlignLeft)
+
+	updateHeader := func() {
+		if currentUser == nil {
+			headerText.SetText("Please login to the server")
+		} else {
+			headerText.SetText(fmt.Sprintf("User: %s", currentUser.Username))
+		}
+	}
+
+	updateHeader()
+
+	menu := tview.NewList().
+		AddItem("Login", "Login to your account", '1', func() {
+			app.SetRoot(loginForm, true).Run()
+		}).
+		AddItem("Register", "Register a new account", '2', func() {
+			app.SetRoot(registerForm, true).Run()
+		}).
+		AddItem("Quit", "Exit the application", '3', func() {
+			app.Stop()
+			os.Exit(0)
 		})
 
-	app.SetRoot(mainMenu(app), true).Run()
+	flex := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(headerBox, 3, 1, false).
+		AddItem(headerText, 1, 1, false).
+		AddItem(menu, 0, 1, true)
+
+	return flex
+}
+
+func postLoginMenu() *tview.Flex {
+	headerBox := tview.NewBox().
+		SetBorder(true).
+		SetTitle("Go Chess Server").
+		SetTitleAlign(tview.AlignLeft)
+
+	headerText := tview.NewTextView().
+		SetDynamicColors(true).
+		SetTextAlign(tview.AlignLeft)
+
+	updateHeader := func() {
+		if currentUser == nil {
+			headerText.SetText("Please login to the server")
+		} else {
+			headerText.SetText(fmt.Sprintf("User: %s", currentUser.Username))
+		}
+	}
+
+	updateHeader()
+
+	menu := tview.NewList().
+		AddItem("Join match", "Join a new match", '0', func() {
+			app.Stop()
+			app = tview.NewApplication()
+			gameResult = "UNDEFINED"
+			joinMatch()
+			showLoginSuccessDialog("Game ended with " + gameResult)
+		}).
+		AddItem("View previous matches", "View previous game with moves", '2', func() {
+			showLoginSuccessDialog("This feature is still in developing stage")
+		}).
+		AddItem("Logout", "Logout from your account", '3', func() {
+			currentUser = nil
+			app.SetRoot(mainMenu(), true).Run()
+		})
+
+	flex := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(headerBox, 3, 1, false).
+		AddItem(headerText, 1, 1, false).
+		AddItem(menu, 0, 1, true)
+
+	return flex
+}
+
+func showLoginErrorDialog(message string) {
+	modal := tview.NewModal().
+		SetText(message).
+		AddButtons([]string{"OK"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			app.SetRoot(loginForm, true).Run()
+		})
+	app.SetRoot(modal, true).Run()
+}
+
+func showRegisterErrorDialog(message string) {
+	modal := tview.NewModal().
+		SetText(message).
+		AddButtons([]string{"OK"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			app.SetRoot(registerForm, true).Run()
+		})
+	app.SetRoot(modal, true).Run()
+}
+
+func showLoginSuccessDialog(message string) {
+	modal := tview.NewModal().
+		SetText(message).
+		AddButtons([]string{"OK"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			app.SetRoot(postLoginMenu(), true).Run()
+		})
+	app.SetRoot(modal, true).Run()
+}
+
+func register(user User) {
+	url := "http://localhost:7202/api/users"
+	userJSON, err := json.Marshal(user)
+	if err != nil {
+		showRegisterErrorDialog(fmt.Sprintf("Error marshalling user: %v", err))
+		return
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(userJSON))
+	if err != nil {
+		showRegisterErrorDialog(fmt.Sprintf("Error making POST request: %v", err))
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		showRegisterErrorDialog(fmt.Sprintf("Register failed: %s", body))
+		return
+	}
+
+	login(user)
+}
+
+func login(user User) {
+	url := "http://localhost:7202/api/login"
+	userJSON, err := json.Marshal(user)
+	if err != nil {
+		showLoginErrorDialog(fmt.Sprintf("Error marshalling user: %v", err))
+		return
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(userJSON))
+	if err != nil {
+		showLoginErrorDialog(fmt.Sprintf("Error making POST request: %v", err))
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		showLoginErrorDialog(fmt.Sprintf("Login failed: %s", body))
+		return
+	}
+
+	var result map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		showLoginErrorDialog(fmt.Sprintf("Error decoding response: %v", err))
+		return
+	}
+
+	// Assuming the token is part of the response
+	pid, ok := result["player_id"].(string)
+	if !ok {
+		showLoginErrorDialog("Player ID not found in response")
+		return
+	}
+	currentUser = &user
+	playerID = pid
+
+	showLoginSuccessDialog("Login successful!")
 }
 
 func joinMatch() {
@@ -109,6 +285,7 @@ func joinMatch() {
 			log.Fatal("ws write", err)
 		}
 
+		clearScreen()
 		log.Println("Attemp matchmaking...")
 
 		var resp matchResponse
@@ -135,7 +312,7 @@ func joinMatch() {
 			clearScreen()
 			printBoard(state.Board, resp.PlayerState.IsWhiteSide)
 			if state.Status != "ACTIVE" {
-				fmt.Println(state.Status)
+				gameResult = state.Status
 				return
 			}
 			if resp.PlayerState.IsWhiteSide == state.IsWhiteTurn {
@@ -184,150 +361,9 @@ func joinMatch() {
 			case <-done:
 			case <-time.After(time.Second):
 			}
-			return
+			os.Exit(1)
 		}
 	}
-}
-
-func mainMenu(app *tview.Application) *tview.Flex {
-	headerBox := tview.NewBox().
-		SetBorder(true).
-		SetTitle("Go Chess Server").
-		SetTitleAlign(tview.AlignLeft)
-
-	headerText := tview.NewTextView().
-		SetDynamicColors(true).
-		SetTextAlign(tview.AlignLeft)
-
-	updateHeader := func() {
-		if currentUser == nil {
-			headerText.SetText("Please login to the server")
-		} else {
-			headerText.SetText(fmt.Sprintf("User: %s", currentUser.Username))
-		}
-	}
-
-	updateHeader()
-
-	menu := tview.NewList().
-		AddItem("Login", "Login to your account", '1', func() {
-			app.SetRoot(loginForm, true).Run()
-		}).
-		AddItem("Register", "Register a new account", '2', func() {
-			app.SetRoot(registerForm, true).Run()
-		}).
-		AddItem("Quit", "Exit the application", '3', func() {
-			app.Stop()
-			os.Exit(0)
-		})
-
-	flex := tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(headerBox, 3, 1, false).
-		AddItem(headerText, 1, 1, false).
-		AddItem(menu, 0, 1, true)
-
-	return flex
-}
-
-func postLoginMenu(app *tview.Application) *tview.Flex {
-	headerBox := tview.NewBox().
-		SetBorder(true).
-		SetTitle("Go Chess Server").
-		SetTitleAlign(tview.AlignLeft)
-
-	headerText := tview.NewTextView().
-		SetDynamicColors(true).
-		SetTextAlign(tview.AlignLeft)
-
-	updateHeader := func() {
-		if currentUser == nil {
-			headerText.SetText("Please login to the server")
-		} else {
-			headerText.SetText(fmt.Sprintf("User: %s", currentUser.Username))
-		}
-	}
-
-	updateHeader()
-
-	menu := tview.NewList().
-		AddItem("Join Match", "Join a new match", '1', func() {
-			app.Stop()
-			joinMatch()
-		}).
-		AddItem("Other Option", "Perform another action", '2', func() {
-			fmt.Println("Other Option selected!")
-		}).
-		AddItem("Logout", "Logout from your account", '3', func() {
-			currentUser = nil
-			app.SetRoot(mainMenu(app), true).Run()
-		})
-
-	flex := tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(headerBox, 3, 1, false).
-		AddItem(headerText, 1, 1, false).
-		AddItem(menu, 0, 1, true)
-
-	return flex
-}
-
-func register(user User) error {
-	url := "http://localhost:7202/register"
-	userJSON, err := json.Marshal(user)
-	if err != nil {
-		return fmt.Errorf("error marshalling user: %w", err)
-	}
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(userJSON))
-	if err != nil {
-		return fmt.Errorf("error making POST request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("register failed: %s", body)
-	}
-
-	fmt.Println("User registered successfully")
-	return nil
-}
-
-func login(user User) (string, error) {
-	// url := "http://localhost:7202/login"
-	// userJSON, err := json.Marshal(user)
-	// if err != nil {
-	// 	return "", fmt.Errorf("error marshalling user: %w", err)
-	// }
-
-	// resp, err := http.Post(url, "application/json", bytes.NewBuffer(userJSON))
-	// if err != nil {
-	// 	return "", fmt.Errorf("error making POST request: %w", err)
-	// }
-	// defer resp.Body.Close()
-
-	// if resp.StatusCode != http.StatusOK {
-	// 	body, _ := io.ReadAll(resp.Body)
-	// 	return "", fmt.Errorf("login failed: %s", body)
-	// }
-
-	// var result map[string]interface{}
-	// err = json.NewDecoder(resp.Body).Decode(&result)
-	// if err != nil {
-	// 	return "", fmt.Errorf("error decoding response: %w", err)
-	// }
-
-	// // Assuming the token is part of the response
-	// token, ok := result["token"].(string)
-	// if !ok {
-	// 	return "", fmt.Errorf("token not found in response")
-	// }
-
-	// fmt.Println("User logged in successfully")
-	// return token, nil
-
-	return "11234", nil
 }
 
 func printBoard(board [8][8]string, isWhiteSide bool) {
