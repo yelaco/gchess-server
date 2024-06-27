@@ -1,20 +1,39 @@
 package database
 
+import (
+	"database/sql"
+	"log"
+
+	_ "github.com/lib/pq"
+
+	"github.com/yelaco/go-chess-server/pkg/logging"
+	"go.uber.org/zap"
+)
+
 type DBConnection struct {
 }
 
-func Connect() (*DBConnection, error) {
-	// cfg := config.Config()
-	// conn, err := pgx.NewConnPool(cfg)
-	// if err != nil {
-	// 	logging.Fatal(fmt.Sprintf("Unable to connect to database: %v\n", err))
-	// return err
-	// }
-	// return conn
+var db *sql.DB
 
-	return nil, nil
+func InitDB() {
+	var err error
+	db, err = sql.Open("postgres", "user=server password=chessserver dbname=chess sslmode=disable")
+	if err != nil {
+		logging.Fatal("database connection failure", zap.Error(err))
+	}
+
+	// Ping database to verify the connection
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	logging.Info("database connected")
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
 }
 
-func (dbConn *DBConnection) Close() {
-
+func CloseDB() {
+	db.Close()
 }

@@ -3,7 +3,6 @@ package agent
 import (
 	"github.com/gorilla/websocket"
 	"github.com/yelaco/go-chess-server/internal/corenet"
-	"github.com/yelaco/go-chess-server/internal/database"
 	"github.com/yelaco/go-chess-server/internal/matcher"
 	"github.com/yelaco/go-chess-server/internal/session"
 	"github.com/yelaco/go-chess-server/pkg/logging"
@@ -11,19 +10,12 @@ import (
 )
 
 type Agent struct {
-	db       *database.DBConnection
 	wsServer *corenet.WebSocketServer
 	matcher  *matcher.Matcher
 }
 
 func NewAgent() *Agent {
-	dbConn, err := database.Connect()
-	if err != nil {
-		logging.Fatal("NewAgent(): couldn't init database connection")
-	}
-
 	a := &Agent{
-		db:       dbConn,
 		wsServer: corenet.NewWebSocketServer(),
 		matcher:  matcher.NewMatcher(),
 	}
@@ -41,10 +33,6 @@ func (a *Agent) StartGameServer() error {
 	}
 
 	return nil
-}
-
-func (a *Agent) Close() {
-	a.db.Close()
 }
 
 func (a *Agent) handleSessionGameOver(s *session.GameSession, sessionID string) {
