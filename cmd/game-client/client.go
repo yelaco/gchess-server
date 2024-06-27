@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -407,7 +408,20 @@ func printBoard(board [8][8]string, isWhiteSide bool) {
 }
 
 func clearScreen() {
-	cmd := exec.Command("clear") // for Windows use "cls"
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "darwin", "linux":
+		cmd = exec.Command("clear")
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "cls")
+	default:
+		fmt.Println("Unsupported OS")
+		return
+	}
+
 	cmd.Stdout = os.Stdout
-	cmd.Run()
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Error clearing screen: %v\n", err)
+	}
 }

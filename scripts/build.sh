@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-BINARY_NAME="robinhood_chess"
+BINARY_NAME="go-chess-server"
 PKG="./cmd/game-server/main.go"
 
 # Functions
