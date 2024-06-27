@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/yelaco/go-chess-server/internal/session"
 	"github.com/yelaco/go-chess-server/pkg/logging"
 	"go.uber.org/zap"
@@ -14,7 +13,6 @@ import (
 type Matcher struct {
 	Queue      []*session.Player
 	SessionMap map[string]string
-	PlayerMap  map[*websocket.Conn]string
 	mu         sync.Mutex
 }
 
@@ -29,7 +27,6 @@ func NewMatcher() *Matcher {
 	return &Matcher{
 		Queue:      []*session.Player{},
 		SessionMap: map[string]string{},
-		PlayerMap:  map[*websocket.Conn]string{},
 		mu:         sync.Mutex{},
 	}
 }
@@ -112,7 +109,19 @@ func notifyMatchingResult(sessionID string, player *session.Player) {
 	})
 }
 
+func (m *Matcher) SessionExists(playerID string) (string, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	sessionID, exists := m.SessionMap[playerID]
+	if exists {
+		return sessionID, true
+	} else {
+		return "", false
+	}
+}
 func (m *Matcher) RemoveSession(player1, player2 string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	delete(m.SessionMap, player1)
 	delete(m.SessionMap, player2)
 }

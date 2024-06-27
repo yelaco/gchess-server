@@ -3,7 +3,6 @@ package session
 import (
 	"errors"
 	"log"
-	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -21,6 +20,11 @@ type GameState struct {
 	Status      string       `json:"status"`
 	Board       [8][8]string `json:"board"`
 	IsWhiteTurn bool         `json:"is_white"`
+}
+
+type SessionResponse struct {
+	Type      string    `json:"type"`
+	GameState GameState `json:"game_state"`
 }
 
 type PlayerState struct {
@@ -48,6 +52,8 @@ func InitSession(sessionID string, player1, player2 *Player) {
 }
 
 func CloseSession(sessionID string) {
+	mu.Lock()
+	defer mu.Unlock()
 	delete(gameSessions, sessionID)
 }
 
@@ -95,6 +101,8 @@ func GetPlayerState(sessionID, playerID string) (PlayerState, error) {
 }
 
 func PlayerJoin(sessionID string, player *Player) error {
+	mu.Lock()
+	defer mu.Unlock()
 	session, exists := gameSessions[sessionID]
 	if exists {
 		if _, ok := session.Players[player.ID]; ok {
@@ -107,6 +115,8 @@ func PlayerJoin(sessionID string, player *Player) error {
 }
 
 func PlayerLeave(sessionID, playerID string) error {
+	mu.Lock()
+	defer mu.Unlock()
 	session, exists := gameSessions[sessionID]
 	if exists {
 		session.Players[playerID] = nil
@@ -125,10 +135,24 @@ func ProcessMove(sessionID, playerID, move string) {
 
 	session, exists := gameSessions[sessionID]
 	if exists {
-		pos := strings.Split(move, "-")
+		pos, parseErr := game.ParseMove(move)
+		if parseErr != nil {
+			logging.Warn("invalid move",
+				zap.String("session_id", sessionID),
+				zap.String("player_id", playerID),
+				zap.String("move", move),
+				zap.String("error", parseErr.Error()),
+			)
+			session.Players[playerID].Conn.WriteJSON(errorResponse{
+				Type:  "error",
+				Error: "invalid move: " + parseErr.Error(),
+			})
+			mu.Unlock()
+			return
+		}
+
 		err := session.Game.MakeMove(playerID, pos[0], pos[1])
 		if err != nil {
-
 			logging.Warn("invalid move",
 				zap.String("session_id", sessionID),
 				zap.String("player_id", playerID),
@@ -139,6 +163,7 @@ func ProcessMove(sessionID, playerID, move string) {
 				Type:  "error",
 				Error: "invalid move: " + err.Error(),
 			})
+			mu.Unlock()
 			return
 		}
 
@@ -161,7 +186,15 @@ func ProcessMove(sessionID, playerID, move string) {
 				})
 				return
 			}
-			if err := player.Conn.WriteJSON(gameState); err != nil {
+
+			if player == nil {
+				continue
+			}
+
+			if err := player.Conn.WriteJSON(SessionResponse{
+				Type:      "session",
+				GameState: gameState,
+			}); err != nil {
 				logging.Error("couldn't notify player ", zap.String("player_id", playerID))
 			}
 		}
