@@ -278,6 +278,9 @@ func (g *Game) kingInCheckmate() bool {
 }
 
 func (g *Game) isStalemate() bool {
+	if g.kingInCheck() {
+		return false
+	}
 	for i := 0; i < 8; i++ {
 		for j := 0; j < 8; j++ {
 			box := g.board.boxes[i][j]

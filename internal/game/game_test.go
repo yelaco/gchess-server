@@ -34,6 +34,8 @@ func setGame(testPiece string) (*Game, string, string) {
 		moves = []string{"e2-e3", "a7-a5", "d1-h5", "a8-a6", "h5-a5", "h7-h5", "h2-h4", "a6-h6",
 			"a5-c7", "f7-f6", "c7-d7", "e8-f7", "d7-b7", "d8-d3", "b7-b8", "d3-h7",
 			"b8-c8", "f7-g6", "c8-e6"}
+	case "checkmate":
+		moves = []string{"e2-e4", "e7-e5", "f1-c4", "b8-c6", "d1-h5", "g8-f6", "h5-f7"}
 	default:
 	}
 	for i, move := range moves {
@@ -115,6 +117,14 @@ func TestKing(t *testing.T) {
 func TestStalemate(t *testing.T) {
 	igame, _, _ := setGame("stalemate")
 	if igame.GetStatus() != "STALEMATE" {
+		t.Errorf("Test stalemate: got %s, want %s", igame.GetStatus(), "STALEMATE")
+	}
+	igame.PrintBoard()
+}
+
+func TestCheckmate(t *testing.T) {
+	igame, _, _ := setGame("checkmate")
+	if igame.GetStatus() != "WHITE_CHECKMATE" {
 		t.Errorf("Test stalemate: got %s, want %s", igame.GetStatus(), "STALEMATE")
 	}
 	igame.PrintBoard()
