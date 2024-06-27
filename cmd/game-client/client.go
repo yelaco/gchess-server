@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/yelaco/go-chess-server/internal/corenet"
@@ -35,51 +36,54 @@ func main() {
 	}
 	defer c.Close()
 
+	playerID := "11225"
+
 	done := make(chan struct{})
-	defer close(done)
 
-	playerID := "11224"
+	go func() {
+		defer close(done)
+		c.WriteJSON(corenet.Message{
+			Action: "matching",
+			Data: map[string]interface{}{
+				"player_id": playerID,
+			},
+		})
 
-	c.WriteJSON(corenet.Message{
-		Action: "matching",
-		Data: map[string]interface{}{
-			"player_id": playerID,
-		},
-	})
-
-	var resp matchResponse
-	if err := c.ReadJSON(&resp); err != nil {
-		log.Fatal("ws match", err)
-		return
-	} else {
-		fmt.Println(resp.Type)
-	}
-
-	if resp.Type != "matched" {
-		log.Fatal("not matched")
-		return
-	}
-
-	state := resp.GameState
-	scanner := bufio.NewScanner(os.Stdin)
-	for {
-		select {
-		case <-done:
+		var resp matchResponse
+		if err := c.ReadJSON(&resp); err != nil {
+			log.Fatal("ws match:", err)
 			return
-		case <-interrupt:
-			log.Println("interrupt")
+		} else {
+			fmt.Println(resp.Type)
+		}
 
-			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil {
-				log.Println("write close:", err)
-				return
+		if resp.Type != "matched" {
+			log.Fatal("not matched")
+			return
+		}
+
+		sessionResp := session.SessionResponse{
+			Type:      "session",
+			GameState: resp.GameState,
+		}
+		var state session.GameState
+		scanner := bufio.NewScanner(os.Stdin)
+		for {
+			if sessionResp.Type == "session" {
+				state = sessionResp.GameState
 			}
-			return
-		default:
 			clearScreen()
 			printBoard(state.Board)
+			if state.Status != "ACTIVE" {
+				fmt.Println(state.Status)
+				return
+			}
 			if resp.PlayerState.IsWhiteSide == state.IsWhiteTurn {
-				fmt.Print("Enter your move (e.g., e2-e4): ")
+				if sessionResp.Type == "session" {
+					fmt.Print("Enter your move (e.g., e2-e4): ")
+				} else {
+					fmt.Print("[Invalid] Enter new move (e.g., e2-e4):")
+				}
 				scanner.Scan()
 				move := scanner.Text()
 
@@ -92,22 +96,40 @@ func main() {
 					},
 				})
 
-				err := c.ReadJSON(&state)
-				if err != nil {
+				if err := c.ReadJSON(&sessionResp); err != nil {
 					log.Fatal(err)
 				}
 			} else {
 				fmt.Print("Wait for your opponent...")
-				if err := c.ReadJSON(&state); err != nil {
+				if err := c.ReadJSON(&sessionResp); err != nil {
 					log.Fatal(err)
 				}
 			}
+		}
+	}()
+
+	for {
+		select {
+		case <-done:
+			return
+		case <-interrupt:
+			log.Println("interrupt")
+
+			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			if err != nil {
+				log.Println("write close:", err)
+				return
+			}
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+			}
+			return
 		}
 	}
 }
 
 func printBoard(board [8][8]string) {
-	fmt.Println("   a b c d e f g h")
 	fmt.Println("  +-----------------+")
 
 	for i := 7; i >= 0; i-- {
@@ -124,6 +146,7 @@ func printBoard(board [8][8]string) {
 	}
 
 	fmt.Println("  +-----------------+")
+	fmt.Println("    a b c d e f g h")
 	fmt.Println()
 }
 
