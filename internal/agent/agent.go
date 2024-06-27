@@ -57,7 +57,7 @@ func (a *Agent) handleSessionGameOver(s *session.GameSession, sessionID string) 
 		}{
 			Type: "endgame",
 			Data: map[string]string{
-				"gameState": s.Game.GetStatus(),
+				"game_state": s.Game.GetStatus(),
 			},
 		})
 		player.Conn.Close()
@@ -66,13 +66,9 @@ func (a *Agent) handleSessionGameOver(s *session.GameSession, sessionID string) 
 	a.matcher.RemoveSession(playerIDs[0], playerIDs[1])
 }
 
-func (a *Agent) playerDisconnectHandler(conn *websocket.Conn) {
-	playerID, ok := a.matcher.PlayerMap[conn]
-	if !ok {
-		return
-	}
-	sessionID, ok := a.matcher.SessionMap[playerID]
-	if !ok {
+func (a *Agent) playerDisconnectHandler(playerID string) {
+	sessionID, exists := a.matcher.SessionExists(playerID)
+	if !exists {
 		return
 	}
 
@@ -91,7 +87,7 @@ func (a *Agent) playerDisconnectHandler(conn *websocket.Conn) {
 	)
 }
 
-func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Message) {
+func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Message, connID *string) {
 	type errorResponse struct {
 		Type  string `json:"type"`
 		Error string `json:"error"`
@@ -100,6 +96,7 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 	case "matching":
 		playerID, ok := message.Data["player_id"].(string)
 		if ok {
+			*connID = playerID
 			logging.Info("attempt matchmaking",
 				zap.String("status", "queued"),
 				zap.String("player_id", playerID),

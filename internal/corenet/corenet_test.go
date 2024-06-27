@@ -80,7 +80,7 @@ func setupWebSocketServer() {
 	log.Fatal(wsServer.Start())
 }
 
-func messageHandler(conn *websocket.Conn, message *Message) {
+func messageHandler(conn *websocket.Conn, message *Message, connID *string) {
 	type errorResponse struct {
 		Type  string `json:"type"`
 		Error string `json:"error"`
@@ -116,6 +116,6 @@ func messageHandler(conn *websocket.Conn, message *Message) {
 	}
 }
 
-func connCloseGameHandler(conn *websocket.Conn) {
+func connCloseGameHandler(connID string) {
 	ch <- true
 }

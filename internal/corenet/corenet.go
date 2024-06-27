@@ -13,8 +13,8 @@ import (
 type WebSocketServer struct {
 	address              string
 	upgrader             websocket.Upgrader
-	messageHandler       func(*websocket.Conn, *Message)
-	connCloseGameHandler func(*websocket.Conn)
+	messageHandler       func(*websocket.Conn, *Message, *string)
+	connCloseGameHandler func(string)
 }
 
 type Message struct {
@@ -35,11 +35,11 @@ func NewWebSocketServer() *WebSocketServer {
 	}
 }
 
-func (s *WebSocketServer) SetMessageHandler(msgHandler func(*websocket.Conn, *Message)) {
+func (s *WebSocketServer) SetMessageHandler(msgHandler func(*websocket.Conn, *Message, *string)) {
 	s.messageHandler = msgHandler
 }
 
-func (s *WebSocketServer) SetConnCloseGameHandler(ccgHandler func(*websocket.Conn)) {
+func (s *WebSocketServer) SetConnCloseGameHandler(ccgHandler func(string)) {
 	s.connCloseGameHandler = ccgHandler
 }
 
@@ -51,10 +51,7 @@ func (s *WebSocketServer) Start() error {
 			return
 		}
 		defer conn.Close()
-		conn.SetCloseHandler(func(code int, text string) error {
-			s.connCloseGameHandler(conn)
-			return conn.CloseHandler()(code, text)
-		})
+		var connID string
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
@@ -63,8 +60,9 @@ func (s *WebSocketServer) Start() error {
 				} else if websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					logging.Info("unexpected close error", zap.String("remote_address", conn.RemoteAddr().String()))
 				} else {
-					logging.Error("ws message read error", zap.String("remote_address", conn.RemoteAddr().String()))
+					logging.Info("ws message read error", zap.String("remote_address", conn.RemoteAddr().String()))
 				}
+				s.connCloseGameHandler(connID)
 				break
 			}
 
@@ -72,7 +70,7 @@ func (s *WebSocketServer) Start() error {
 			if err := json.Unmarshal(message, &msg); err != nil {
 				conn.Close()
 			}
-			s.messageHandler(conn, &msg)
+			s.messageHandler(conn, &msg, &connID)
 		}
 	})
 	logging.Info("websocket server started", zap.String("port", config.Port))
