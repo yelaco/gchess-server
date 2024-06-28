@@ -18,11 +18,11 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/rivo/tview"
-	"github.com/yelaco/go-chess-server/internal/corenet"
 	"github.com/yelaco/go-chess-server/internal/database"
 	"github.com/yelaco/go-chess-server/internal/game"
-	"github.com/yelaco/go-chess-server/internal/session"
 	"github.com/yelaco/go-chess-server/pkg/config"
+	"github.com/yelaco/go-chess-server/pkg/corenet"
+	"github.com/yelaco/go-chess-server/pkg/session"
 )
 
 type matchResponse struct {
@@ -38,16 +38,15 @@ type User struct {
 }
 
 var (
-	app           *tview.Application
-	loginForm     *tview.Form
-	registerForm  *tview.Form
-	viewMatchForm *tview.List
-	currentUser   *User
-	prevSessions  []database.Session
-	playerID      string
-	gameResult    string
-	moveIdx       int
-	boardStates   [][8][8]string
+	app          *tview.Application
+	loginForm    *tview.Form
+	registerForm *tview.Form
+	currentUser  *User
+	prevSessions []database.Session
+	playerID     string
+	gameResult   string
+	moveIdx      int
+	boardStates  [][8][8]string
 )
 
 func main() {

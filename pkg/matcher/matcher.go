@@ -5,12 +5,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yelaco/go-chess-server/internal/session"
 	"github.com/yelaco/go-chess-server/pkg/config"
 	"github.com/yelaco/go-chess-server/pkg/logging"
+	"github.com/yelaco/go-chess-server/pkg/session"
 	"go.uber.org/zap"
 )
 
+/*
+A Matcher handles matchmaking logic and forwards the player connection to session manager
+*/
 type Matcher struct {
 	Queue      []*session.Player
 	SessionMap map[string]string
@@ -30,6 +33,9 @@ type timeoutResponpse struct {
 	Message string `json:"Message"`
 }
 
+/*
+Return a Matcher with initialized fields
+*/
 func NewMatcher() *Matcher {
 	return &Matcher{
 		Queue:      []*session.Player{},
@@ -39,12 +45,19 @@ func NewMatcher() *Matcher {
 	}
 }
 
+/*
+Enter players to the matching queue. Matcher also keeps track of connection ID
+to ensure no user can enter queue multiple time at the same time.
+After timeout, Matcher will cancel queueing of the corresponding player
+if there aren't no matches available.
+The player can also rejoin an unfinished match they left
+*/
 func (m *Matcher) EnterQueue(player *session.Player, connID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	sessionID, exists := m.SessionMap[player.ID]
 	if exists {
-		m.RejoinMatch(sessionID, player)
+		m.rejoinMatch(sessionID, player)
 		return
 	}
 	for _, pid := range m.ConnMap {
@@ -61,11 +74,14 @@ func (m *Matcher) EnterQueue(player *session.Player, connID string) {
 	}
 	m.Queue = append(m.Queue, player)
 	m.ConnMap[connID] = player.ID
-	go m.LeaveQueueIfTimeout(player, connID)
+	go m.leaveQueueIfTimeout(player, connID)
 	go m.findMatch()
 }
 
-func (m *Matcher) LeaveQueueIfTimeout(player *session.Player, connID string) {
+/*
+Matcher pushes player out of the matching queue after a timeout if there aren't no matches available.
+*/
+func (m *Matcher) leaveQueueIfTimeout(player *session.Player, connID string) {
 	time.Sleep(config.MatchingTimeout)
 	if player == nil {
 		return
@@ -116,7 +132,7 @@ func (m *Matcher) findMatch() {
 	}
 }
 
-func (m *Matcher) RejoinMatch(sessionID string, player *session.Player) {
+func (m *Matcher) rejoinMatch(sessionID string, player *session.Player) {
 	if err := session.PlayerJoin(sessionID, player); err != nil {
 		player.Conn.WriteJSON(struct {
 			Type  string `json:"type"`
@@ -162,6 +178,9 @@ func notifyMatchingResult(sessionID string, player *session.Player) {
 	})
 }
 
+/*
+Check if player is in a session
+*/
 func (m *Matcher) SessionExists(playerID string) (string, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -172,6 +191,10 @@ func (m *Matcher) SessionExists(playerID string) (string, bool) {
 		return "", false
 	}
 }
+
+/*
+Remove the session after it terminated
+*/
 func (m *Matcher) RemoveSession(player1, player2 string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

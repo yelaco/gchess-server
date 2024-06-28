@@ -2,11 +2,11 @@ package agent
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/yelaco/go-chess-server/internal/corenet"
 	"github.com/yelaco/go-chess-server/internal/database"
-	"github.com/yelaco/go-chess-server/internal/matcher"
-	"github.com/yelaco/go-chess-server/internal/session"
+	"github.com/yelaco/go-chess-server/pkg/corenet"
 	"github.com/yelaco/go-chess-server/pkg/logging"
+	"github.com/yelaco/go-chess-server/pkg/matcher"
+	"github.com/yelaco/go-chess-server/pkg/session"
 	"github.com/yelaco/go-chess-server/pkg/utils"
 	"go.uber.org/zap"
 )
@@ -16,6 +16,7 @@ type Agent struct {
 	matcher  *matcher.Matcher
 }
 
+// Return an Agent object which is the center module interacting with other modules
 func NewAgent() *Agent {
 	a := &Agent{
 		wsServer: corenet.NewWebSocketServer(),
@@ -28,6 +29,7 @@ func NewAgent() *Agent {
 	return a
 }
 
+// Start the server for handling game session
 func (a *Agent) StartGameServer() error {
 	err := a.wsServer.Start()
 	if err != nil {
@@ -37,6 +39,11 @@ func (a *Agent) StartGameServer() error {
 	return nil
 }
 
+/*
+Handler for when a game instance ended.
+This includes saving the session to the database, close the session
+and remove session from tracking of Matcher
+*/
 func (a *Agent) handleSessionGameOver(s *session.GameSession, sessionID string) {
 	playerIDs := make([]string, 0, 2)
 	for id, player := range s.Players {
@@ -60,6 +67,9 @@ func (a *Agent) handleSessionGameOver(s *session.GameSession, sessionID string) 
 	a.matcher.RemoveSession(playerIDs[0], playerIDs[1])
 }
 
+/*
+Handler for when a user connection closes
+*/
 func (a *Agent) playerDisconnectHandler(connID string) {
 	playerID, ok := a.matcher.ConnMap[connID]
 	if !ok {
@@ -88,6 +98,9 @@ func (a *Agent) playerDisconnectHandler(connID string) {
 	)
 }
 
+/*
+Handler for when user socket sends a message
+*/
 func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Message, connID *string) {
 	type errorResponse struct {
 		Type  string `json:"type"`

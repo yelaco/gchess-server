@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Start REST server
 func StartRESTServer(port string) error {
 	http.HandleFunc("POST /api/users", handlerUsersCreate)
 	http.HandleFunc("POST /api/login", handlerLogin)

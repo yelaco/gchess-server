@@ -34,7 +34,7 @@ func GetSessionByID(sessionID string) (Session, error) {
 func GetSessionsByPlayerID(playerID string) ([]Session, error) {
 	var sessions []Session
 
-	query := `SELECT session_id, player1_id, player2_id, moves FROM sessions WHERE player1_id = $1 OR player2_id = $1`
+	query := `SELECT session_id, player1_id, player2_id, moves FROM sessions WHERE player1_id = $1 OR player2_id = $1 ORDER BY session_id DESC LIMIT 5`
 	rows, err := db.Query(query, playerID)
 	if err != nil {
 		return nil, err

@@ -8,6 +8,9 @@ import (
 	"github.com/yelaco/go-chess-server/internal/database"
 )
 
+/*
+HTTP Handler for when user access login endpoint
+*/
 func handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Username string `json:"username"`

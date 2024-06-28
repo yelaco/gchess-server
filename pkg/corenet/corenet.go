@@ -35,14 +35,23 @@ func NewWebSocketServer() *WebSocketServer {
 	}
 }
 
+/*
+Set message handler for incoming websocket message
+*/
 func (s *WebSocketServer) SetMessageHandler(msgHandler func(*websocket.Conn, *Message, *string)) {
 	s.messageHandler = msgHandler
 }
 
+/*
+Set handler for connection closed by user
+*/
 func (s *WebSocketServer) SetConnCloseGameHandler(ccgHandler func(string)) {
 	s.connCloseGameHandler = ccgHandler
 }
 
+/*
+Start the websocket server
+*/
 func (s *WebSocketServer) Start() error {
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := s.upgrader.Upgrade(w, r, nil)
