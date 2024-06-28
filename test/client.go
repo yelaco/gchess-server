@@ -246,6 +246,10 @@ func postLoginMenu() *tview.Flex {
 			joinMatch()
 			if gameResult == "timeout" {
 				showMatchingErrorDialog("Matching timeout")
+			} else if gameResult == "queueing" {
+				showMatchingErrorDialog("You are queueing elsewhere")
+			} else if gameResult == "error" {
+				showMatchingErrorDialog("You are playing elsewhere")
 			} else {
 				showLoginSuccessDialog("Game ended with " + gameResult)
 			}

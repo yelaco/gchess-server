@@ -100,12 +100,28 @@ func GetPlayerState(sessionID, playerID string) (PlayerState, error) {
 	return PlayerState{}, errors.New("invalid session id")
 }
 
+func PlayerInSession(sessionID string, player *Player) bool {
+	mu.Lock()
+	defer mu.Unlock()
+	session, exists := gameSessions[sessionID]
+	if exists {
+		if p, ok := session.Players[player.ID]; ok {
+			return p == player
+		}
+		return false
+	}
+	return false
+}
+
 func PlayerJoin(sessionID string, player *Player) error {
 	mu.Lock()
 	defer mu.Unlock()
 	session, exists := gameSessions[sessionID]
 	if exists {
-		if _, ok := session.Players[player.ID]; ok {
+		if p, ok := session.Players[player.ID]; ok {
+			if p != nil {
+				return errors.New("player still in session")
+			}
 			session.Players[player.ID] = player
 			return nil
 		}
@@ -143,10 +159,12 @@ func ProcessMove(sessionID, playerID, move string) {
 				zap.String("move", move),
 				zap.String("error", parseErr.Error()),
 			)
-			session.Players[playerID].Conn.WriteJSON(errorResponse{
+			if err := session.Players[playerID].Conn.WriteJSON(errorResponse{
 				Type:  "error",
 				Error: "invalid move: " + parseErr.Error(),
-			})
+			}); err != nil {
+				logging.Info("ws write", zap.Error(err))
+			}
 			mu.Unlock()
 			return
 		}
@@ -159,10 +177,12 @@ func ProcessMove(sessionID, playerID, move string) {
 				zap.String("move", move),
 				zap.String("error", err.Error()),
 			)
-			session.Players[playerID].Conn.WriteJSON(errorResponse{
+			if err := session.Players[playerID].Conn.WriteJSON(errorResponse{
 				Type:  "error",
 				Error: "invalid move: " + err.Error(),
-			})
+			}); err != nil {
+				logging.Info("ws write", zap.Error(err))
+			}
 			mu.Unlock()
 			return
 		}
@@ -180,10 +200,12 @@ func ProcessMove(sessionID, playerID, move string) {
 			gameState, err := GetGameState(sessionID)
 			if err != nil {
 				logging.Error("invalid session id for game state")
-				player.Conn.WriteJSON(errorResponse{
+				if err := player.Conn.WriteJSON(errorResponse{
 					Type:  "error",
 					Error: "coulnd't retrieve game state",
-				})
+				}); err != nil {
+					logging.Info("ws write", zap.Error(err))
+				}
 				return
 			}
 

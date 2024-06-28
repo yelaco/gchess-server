@@ -14,6 +14,7 @@ import (
 type Matcher struct {
 	Queue      []*session.Player
 	SessionMap map[string]string
+	ConnMap    map[string]string
 	mu         sync.Mutex
 }
 
@@ -33,11 +34,12 @@ func NewMatcher() *Matcher {
 	return &Matcher{
 		Queue:      []*session.Player{},
 		SessionMap: map[string]string{},
+		ConnMap:    map[string]string{},
 		mu:         sync.Mutex{},
 	}
 }
 
-func (m *Matcher) EnterQueue(player *session.Player) {
+func (m *Matcher) EnterQueue(player *session.Player, connID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	sessionID, exists := m.SessionMap[player.ID]
@@ -45,12 +47,25 @@ func (m *Matcher) EnterQueue(player *session.Player) {
 		m.RejoinMatch(sessionID, player)
 		return
 	}
+	for _, pid := range m.ConnMap {
+		if pid == player.ID {
+			player.Conn.WriteJSON(struct {
+				Type  string `json:"type"`
+				Error string `json:"error"`
+			}{
+				Type:  "queueing",
+				Error: "Already queued",
+			})
+			return
+		}
+	}
 	m.Queue = append(m.Queue, player)
-	go m.LeaveQueueIfTimeout(player)
+	m.ConnMap[connID] = player.ID
+	go m.LeaveQueueIfTimeout(player, connID)
 	go m.findMatch()
 }
 
-func (m *Matcher) LeaveQueueIfTimeout(player *session.Player) {
+func (m *Matcher) LeaveQueueIfTimeout(player *session.Player, connID string) {
 	time.Sleep(config.MatchingTimeout)
 	if player == nil {
 		return
@@ -61,11 +76,15 @@ func (m *Matcher) LeaveQueueIfTimeout(player *session.Player) {
 			Message: "Canceled matching due to timeout",
 		})
 	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	delete(m.ConnMap, connID)
 	for i, p := range m.Queue {
 		if p.ID == player.ID || p == player {
 			m.Queue = append(m.Queue[:i], m.Queue[i+1:]...)
+			return
 		}
 	}
 }
@@ -98,6 +117,16 @@ func (m *Matcher) findMatch() {
 }
 
 func (m *Matcher) RejoinMatch(sessionID string, player *session.Player) {
+	if err := session.PlayerJoin(sessionID, player); err != nil {
+		player.Conn.WriteJSON(struct {
+			Type  string `json:"type"`
+			Error string `json:"error"`
+		}{
+			Type:  "error",
+			Error: "Coulnd't join match: " + err.Error(),
+		})
+		return
+	}
 	notifyMatchingResult(sessionID, player)
 }
 
@@ -124,8 +153,6 @@ func notifyMatchingResult(sessionID string, player *session.Player) {
 			Error: "Coulnd't join match: " + err.Error(),
 		})
 	}
-
-	session.PlayerJoin(sessionID, player)
 
 	player.Conn.WriteJSON(matchResponse{
 		Type:        "matched",

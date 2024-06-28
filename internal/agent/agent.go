@@ -7,6 +7,7 @@ import (
 	"github.com/yelaco/go-chess-server/internal/matcher"
 	"github.com/yelaco/go-chess-server/internal/session"
 	"github.com/yelaco/go-chess-server/pkg/logging"
+	"github.com/yelaco/go-chess-server/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -59,7 +60,12 @@ func (a *Agent) handleSessionGameOver(s *session.GameSession, sessionID string) 
 	a.matcher.RemoveSession(playerIDs[0], playerIDs[1])
 }
 
-func (a *Agent) playerDisconnectHandler(playerID string) {
+func (a *Agent) playerDisconnectHandler(connID string) {
+	playerID, ok := a.matcher.ConnMap[connID]
+	if !ok {
+		return
+	}
+
 	sessionID, exists := a.matcher.SessionExists(playerID)
 	if !exists {
 		return
@@ -73,6 +79,8 @@ func (a *Agent) playerDisconnectHandler(playerID string) {
 			zap.Error(err),
 		)
 	}
+
+	delete(a.matcher.ConnMap, connID)
 
 	logging.Info("player disconnected",
 		zap.String("player_id", playerID),
@@ -89,7 +97,7 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 	case "matching":
 		playerID, ok := message.Data["player_id"].(string)
 		if ok {
-			*connID = playerID
+			*connID = utils.GenerateUUID()
 			logging.Info("attempt matchmaking",
 				zap.String("status", "queued"),
 				zap.String("player_id", playerID),
@@ -98,7 +106,7 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 			a.matcher.EnterQueue(&session.Player{
 				Conn: conn,
 				ID:   playerID,
-			})
+			}, *connID)
 		} else {
 			logging.Info("attempt matchmaking",
 				zap.String("status", "rejected"),
