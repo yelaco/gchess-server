@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/yelaco/go-chess-server/internal/session"
+	"github.com/yelaco/go-chess-server/pkg/config"
 	"github.com/yelaco/go-chess-server/pkg/logging"
 	"go.uber.org/zap"
 )
@@ -21,6 +22,11 @@ type matchResponse struct {
 	SessionID   string              `json:"session_id"`
 	GameState   session.GameState   `json:"game_state"`
 	PlayerState session.PlayerState `json:"player_state"`
+}
+
+type timeoutResponpse struct {
+	Type    string `json:"type"`
+	Message string `json:"Message"`
 }
 
 func NewMatcher() *Matcher {
@@ -40,7 +46,28 @@ func (m *Matcher) EnterQueue(player *session.Player) {
 		return
 	}
 	m.Queue = append(m.Queue, player)
+	go m.LeaveQueueIfTimeout(player)
 	go m.findMatch()
+}
+
+func (m *Matcher) LeaveQueueIfTimeout(player *session.Player) {
+	time.Sleep(config.MatchingTimeout)
+	if player == nil {
+		return
+	}
+	if _, ok := m.SessionMap[player.ID]; !ok {
+		player.Conn.WriteJSON(timeoutResponpse{
+			Type:    "timeout",
+			Message: "Canceled matching due to timeout",
+		})
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, p := range m.Queue {
+		if p.ID == player.ID || p == player {
+			m.Queue = append(m.Queue[:i], m.Queue[i+1:]...)
+		}
+	}
 }
 
 func generateSessionId() string {
@@ -50,7 +77,6 @@ func generateSessionId() string {
 func (m *Matcher) findMatch() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
 	if len(m.Queue) >= 2 {
 		player1 := m.Queue[0]
 		player2 := m.Queue[1]
