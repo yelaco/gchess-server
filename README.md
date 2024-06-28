@@ -2,6 +2,8 @@
 
 The go-chess-server project is a backend server application designed to manage chess games and provide a platform for multiplayer matches. Built using the Go programming language, the server supports essential functionalities for hosting online chess matches, including player authentication, game state management, move validation, and real-time game updates
 
+![pixlr-image-generator-6b8608fb-840f-4d55-94a9-a3b4b4b9f8d8](https://github.com/yelaco/go-chess-server/assets/100106895/8c43dd20-cc83-4da8-a6f1-0c9c62692e66)
+
 ## Features
 
 **Player Authentication**
