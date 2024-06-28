@@ -33,6 +33,8 @@ func InitGame(playerIds [2]string) *Game {
 		board:       initBoard(),
 		isWhiteTurn: true,
 		status:      active,
+		moves:       []*move{},
+		kingSpots:   [2]*spot{},
 	}
 	g.kingSpots[0] = g.board.boxes[4][0]
 	g.kingSpots[1] = g.board.boxes[4][7]

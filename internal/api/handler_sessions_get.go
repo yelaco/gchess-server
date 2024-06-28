@@ -13,7 +13,7 @@ func handlerSessionGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionIDs, err := database.GetSessionIDsByPlayerID(player_id)
+	sessionIDs, err := database.GetSessionsByPlayerID(player_id)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid player id")
 	}

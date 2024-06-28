@@ -72,3 +72,11 @@ func (g *Game) GetLastMove() *move {
 	lastMove := g.moves[len(g.moves)-1]
 	return lastMove
 }
+
+func (g *Game) GetAllMoves() []string {
+	res := make([]string, 0, len(g.moves))
+	for _, move := range g.moves {
+		res = append(res, move.startPos+"-"+move.endPos)
+	}
+	return res
+}
