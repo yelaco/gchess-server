@@ -2,7 +2,7 @@
 
 # Variables
 BINARY_NAME="go-chess-server"
-PKG="./cmd/game-server/main.go"
+PKG="./cmd/game-server/server.go"
 
 # Functions
 build() {
