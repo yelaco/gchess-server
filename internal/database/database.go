@@ -10,9 +10,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type DBConnection struct {
-}
-
 var db *sql.DB
 
 func InitDB() {

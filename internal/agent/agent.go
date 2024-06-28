@@ -3,6 +3,7 @@ package agent
 import (
 	"github.com/gorilla/websocket"
 	"github.com/yelaco/go-chess-server/internal/corenet"
+	"github.com/yelaco/go-chess-server/internal/database"
 	"github.com/yelaco/go-chess-server/internal/matcher"
 	"github.com/yelaco/go-chess-server/internal/session"
 	"github.com/yelaco/go-chess-server/pkg/logging"
@@ -49,6 +50,10 @@ func (a *Agent) handleSessionGameOver(s *session.GameSession, sessionID string) 
 			},
 		})
 		player.Conn.Close()
+	}
+	gameMoves := s.Game.GetAllMoves()
+	if _, err := database.InsertSession(sessionID, playerIDs[0], playerIDs[1], gameMoves); err != nil {
+		logging.Error("coulnd't save game", zap.Error(err))
 	}
 	session.CloseSession(sessionID)
 	a.matcher.RemoveSession(playerIDs[0], playerIDs[1])

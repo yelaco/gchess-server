@@ -7,8 +7,8 @@ import (
 
 type Session struct {
 	SessionID string   `json:"session_id"`
-	Player1ID string   `json:"player1_id`
-	Player2ID string   `json:"player2_id`
+	Player1ID string   `json:"player1_id"`
+	Player2ID string   `json:"player2_id"`
 	Moves     []string `json:"moves"`
 }
 
@@ -31,10 +31,10 @@ func GetSessionByID(sessionID string) (Session, error) {
 	return session, nil
 }
 
-func GetSessionIDsByPlayerID(playerID string) ([]string, error) {
-	var sessionIDs []string
+func GetSessionsByPlayerID(playerID string) ([]Session, error) {
+	var sessions []Session
 
-	query := `SELECT session_id FROM sessions WHERE player1_id = $1 OR player2_id = $1`
+	query := `SELECT session_id, player1_id, player2_id, moves FROM sessions WHERE player1_id = $1 OR player2_id = $1`
 	rows, err := db.Query(query, playerID)
 	if err != nil {
 		return nil, err
@@ -42,20 +42,23 @@ func GetSessionIDsByPlayerID(playerID string) ([]string, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var sessionID string
-		err := rows.Scan(&sessionID)
+		var session Session
+		var movesJSON string
+		err := rows.Scan(&session.SessionID, &session.Player1ID, &session.Player2ID, &movesJSON)
 		if err != nil {
 			return nil, err
 		}
-
-		sessionIDs = append(sessionIDs, sessionID)
+		if err := json.Unmarshal([]byte(movesJSON), &session.Moves); err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, session)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return sessionIDs, nil
+	return sessions, nil
 }
 
 func InsertSession(sessionID, player1ID, player2ID string, moves []string) (Session, error) {

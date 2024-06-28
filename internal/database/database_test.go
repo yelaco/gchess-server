@@ -45,13 +45,13 @@ func TestSession(t *testing.T) {
 	}
 	fmt.Println(newSession)
 
-	sessionIDs, err := GetSessionIDsByPlayerID(newSession.Player1ID)
+	sessions, err := GetSessionsByPlayerID(newSession.Player1ID)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	session, err := GetSessionByID(sessionIDs[0])
+	session, err := GetSessionByID(sessions[0].SessionID)
 	if err != nil {
 		t.Error(err)
 		return
