@@ -1,0 +1,27 @@
+services:
+  app:
+    build: .
+    container_name: go-chess-server
+    ports:
+      - "7202:7202"
+      - "7201:7201"
+    environment:
+      - DATABASE_URL=postgresql://server:chessserver@db:5432/chess
+    depends_on:
+      - db
+
+  db:
+    image: postgres:12
+    container_name: postgres12
+    environment:
+      POSTGRES_USER: server
+      POSTGRES_PASSWORD: chessserver
+      POSTGRES_DB: chess
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d/
+
+volumes:
+  postgres_data:

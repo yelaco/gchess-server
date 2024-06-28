@@ -20,7 +20,6 @@ import (
 	"github.com/rivo/tview"
 	"github.com/yelaco/go-chess-server/internal/database"
 	"github.com/yelaco/go-chess-server/internal/game"
-	"github.com/yelaco/go-chess-server/pkg/config"
 	"github.com/yelaco/go-chess-server/pkg/corenet"
 	"github.com/yelaco/go-chess-server/pkg/session"
 )
@@ -427,7 +426,7 @@ func joinMatch() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	u := url.URL{Scheme: "ws", Host: config.Host + ":" + config.Port, Path: "/ws"}
+	u := url.URL{Scheme: "ws", Host: "localhost:7201", Path: "/ws"}
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {

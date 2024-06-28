@@ -24,7 +24,7 @@ type Message struct {
 
 func NewWebSocketServer() *WebSocketServer {
 	return &WebSocketServer{
-		address: config.Host + ":" + config.Port,
+		address: "0.0.0.0:" + config.Port,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,

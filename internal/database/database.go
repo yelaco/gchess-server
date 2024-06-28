@@ -14,7 +14,7 @@ var db *sql.DB
 
 func InitDB() {
 	var err error
-	db, err = sql.Open("postgres", "user=server password=chessserver dbname=chess sslmode=disable")
+	db, err = sql.Open("postgres", "host=db user=server password=chessserver dbname=chess sslmode=disable")
 	if err != nil {
 		logging.Fatal("database connection failure", zap.Error(err))
 	}

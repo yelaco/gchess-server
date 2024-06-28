@@ -27,7 +27,7 @@ func handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 	user, err := database.GetUserByUsername(params.Username)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Couldn't find user with specified email")
+		respondWithError(w, http.StatusBadRequest, "Couldn't find user with specified username")
 		return
 	}
 
