@@ -32,7 +32,7 @@ $ go run test.go
 
 Here is a video that showcase all the functionalities of the CLI
 
-[client](https://github.com/yelaco/go-chess-server/assets/100106895/434673b4-817b-4423-97d0-39a22cecd751)
+[client.webm](https://github.com/yelaco/go-chess-server/assets/100106895/d88f310b-b207-459a-b139-d11a64390293)
 
 ### Server
 
