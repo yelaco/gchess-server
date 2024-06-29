@@ -11,8 +11,8 @@ services:
       - db
 
   db:
-    image: postgres:12
-    container_name: postgres12
+    image: postgres:12-alpine
+    container_name: postgres-chess
     environment:
       POSTGRES_USER: server
       POSTGRES_PASSWORD: chessserver
