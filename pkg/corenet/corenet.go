@@ -64,10 +64,10 @@ func (s *WebSocketServer) Start() error {
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseMessage, websocket.CloseMessage) {
-					logging.Info("connection closed", zap.String("remote_address", conn.RemoteAddr().String()))
-				} else if websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseMessage, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					logging.Info("unexpected close error", zap.String("remote_address", conn.RemoteAddr().String()))
+				} else if websocket.IsCloseError(err, websocket.CloseMessage, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					logging.Info("connection closed", zap.String("remote_address", conn.RemoteAddr().String()))
 				} else {
 					logging.Info("ws message read error", zap.String("remote_address", conn.RemoteAddr().String()))
 				}
