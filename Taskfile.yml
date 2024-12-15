@@ -1,0 +1,22 @@
+version: "3"
+
+env:
+  INFRA_DIR: ./.infra
+
+tasks:
+  up:
+    preconditions:
+      - test -f docker-compose.yml
+    cmds:
+      - docker compose up
+  down:
+    preconditions:
+      - test -f docker-compose.yml
+    cmds:
+      - docker compose up
+  client:
+    preconditions:
+      - test -d $INFRA_DIR
+    cmds:
+      - if [ ! -f $INFRA_DIR/config.json ]; then cp $INFRA_DIR/config.example.json $INFRA_DIR/config.json; fi
+      - go run ./test/client.go
