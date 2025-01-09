@@ -54,7 +54,6 @@ func main() {
 	setupForms(app)
 
 	app.SetRoot(mainMenu(), true).Run()
-
 }
 
 func setupForms(app *tview.Application) {

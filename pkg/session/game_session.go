@@ -3,11 +3,13 @@ package session
 import (
 	"errors"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/yelaco/go-chess-server/internal/game"
 	"github.com/yelaco/go-chess-server/pkg/logging"
+	"github.com/yelaco/go-chess-server/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -31,14 +33,16 @@ type PlayerState struct {
 	IsWhiteSide bool `json:"is_white_side"`
 }
 
-var gameSessions = make(map[string]*GameSession)
-var mu sync.RWMutex
-var gameOverHandler = func(session *GameSession, sessionID string) {
-	CloseSession(sessionID)
-	for _, player := range session.Players {
-		player.Conn.Close()
+var (
+	gameSessions    = make(map[string]*GameSession)
+	mu              sync.RWMutex
+	gameOverHandler = func(session *GameSession, sessionID string) {
+		CloseSession(sessionID)
+		for _, player := range session.Players {
+			player.Conn.Close()
+		}
 	}
-}
+)
 
 func InitSession(sessionID string, player1, player2 *Player) {
 	playersMap := map[string]*Player{
@@ -141,13 +145,27 @@ func PlayerLeave(sessionID, playerID string) error {
 	return errors.New("invalid session id")
 }
 
-func ProcessMove(sessionID, playerID, move string) {
+func ProcessFenMove(sessionID, playerID, fenMove string) {
 	mu.Lock()
+
+	type gameStateResponse struct {
+		Status      string `json:"status,omitempty"`
+		BoardFen    string `json:"board_fen,omitempty"`
+		IsWhiteTurn bool   `json:"is_white_turn,omitempty"`
+	}
+
+	type sessionResponse struct {
+		Type      string            `json:"type,omitempty"`
+		GameState gameStateResponse `json:"game_state,omitempty"`
+	}
 
 	type errorResponse struct {
 		Type  string `json:"type"`
 		Error string `json:"error"`
 	}
+
+	// TODO: validate if fen match the current board state
+	move := strings.Split(fenMove, " ")[1]
 
 	session, exists := gameSessions[sessionID]
 	if exists {
@@ -213,9 +231,13 @@ func ProcessMove(sessionID, playerID, move string) {
 				continue
 			}
 
-			if err := player.Conn.WriteJSON(SessionResponse{
-				Type:      "session",
-				GameState: gameState,
+			if err := player.Conn.WriteJSON(sessionResponse{
+				Type: "session",
+				GameState: gameStateResponse{
+					Status:      gameState.Status,
+					BoardFen:    utils.BoardToFen(gameState.Board),
+					IsWhiteTurn: gameState.IsWhiteTurn,
+				},
 			}); err != nil {
 				logging.Error("couldn't notify player ", zap.String("player_id", playerID))
 			}

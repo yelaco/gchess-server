@@ -8,6 +8,7 @@ import (
 	"github.com/yelaco/go-chess-server/pkg/config"
 	"github.com/yelaco/go-chess-server/pkg/logging"
 	"github.com/yelaco/go-chess-server/pkg/session"
+	"github.com/yelaco/go-chess-server/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -24,8 +25,14 @@ type Matcher struct {
 type matchResponse struct {
 	Type        string              `json:"type"`
 	SessionID   string              `json:"session_id"`
-	GameState   session.GameState   `json:"game_state"`
+	GameState   gameStateResponse   `json:"game_state"`
 	PlayerState session.PlayerState `json:"player_state"`
+}
+
+type gameStateResponse struct {
+	Status      string `json:"status,omitempty"`
+	BoardFen    string `json:"board_fen,omitempty"`
+	IsWhiteTurn bool   `json:"is_white_turn,omitempty"`
 }
 
 type timeoutResponpse struct {
@@ -171,9 +178,13 @@ func notifyMatchingResult(sessionID string, player *session.Player) {
 	}
 
 	player.Conn.WriteJSON(matchResponse{
-		Type:        "matched",
-		SessionID:   sessionID,
-		GameState:   gameState,
+		Type:      "matched",
+		SessionID: sessionID,
+		GameState: gameStateResponse{
+			Status:      gameState.Status,
+			BoardFen:    utils.BoardToFen(gameState.Board),
+			IsWhiteTurn: gameState.IsWhiteTurn,
+		},
 		PlayerState: playerState,
 	})
 }

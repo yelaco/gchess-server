@@ -1,0 +1,16 @@
+{
+  "host": {
+    "address": "localhost",
+    "game_server_port": "7201",
+    "rest_server_port": "7202"
+  },
+  "database": {
+    "name": "postgres",
+    "host": "localhost",
+    "user": "postgres",
+    "password": "password"
+  },
+  "game": {
+    "matching_timeout": 30
+  }
+}

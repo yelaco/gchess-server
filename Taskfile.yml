@@ -13,7 +13,7 @@ tasks:
     preconditions:
       - test -f docker-compose.yml
     cmds:
-      - docker compose up
+      - docker compose down
   client:
     preconditions:
       - test -d $INFRA_DIR

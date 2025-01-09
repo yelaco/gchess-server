@@ -143,7 +143,7 @@ func (a *Agent) handleWebSocketMessage(conn *websocket.Conn, message *corenet.Me
 				zap.String("move", move),
 				zap.String("remote_address", conn.RemoteAddr().String()),
 			)
-			session.ProcessMove(sessionID, playerID, move)
+			session.ProcessFenMove(sessionID, playerID, move)
 		} else {
 			logging.Info("attempt making move",
 				zap.String("status", "rejected"),

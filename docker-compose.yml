@@ -1,6 +1,6 @@
 services:
   app:
-    image: yelaco/go-chess-server
+    build: .
     container_name: go-chess-server
     ports:
       - "7202:7202"
