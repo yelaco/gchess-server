@@ -149,14 +149,14 @@ func ProcessFenMove(sessionID, playerID, fenMove string) {
 	mu.Lock()
 
 	type gameStateResponse struct {
-		Status      string `json:"status,omitempty"`
-		BoardFen    string `json:"board_fen,omitempty"`
-		IsWhiteTurn bool   `json:"is_white_turn,omitempty"`
+		Status      string `json:"status"`
+		BoardFen    string `json:"board_fen"`
+		IsWhiteTurn bool   `json:"is_white_turn"`
 	}
 
 	type sessionResponse struct {
-		Type      string            `json:"type,omitempty"`
-		GameState gameStateResponse `json:"game_state,omitempty"`
+		Type      string            `json:"type"`
+		GameState gameStateResponse `json:"game_state"`
 	}
 
 	type errorResponse struct {
@@ -241,6 +241,9 @@ func ProcessFenMove(sessionID, playerID, fenMove string) {
 			}); err != nil {
 				logging.Error("couldn't notify player ", zap.String("player_id", playerID))
 			}
+			logging.Info("game state",
+				zap.Bool("is_white_turn", gameState.IsWhiteTurn),
+			)
 		}
 
 		if session.Game.IsOver() {
